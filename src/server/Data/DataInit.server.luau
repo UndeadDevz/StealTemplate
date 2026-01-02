@@ -51,6 +51,10 @@ local function Initialize(player: Player, profile: typeof(PlayerStore:StartSessi
 	Wins.Name = "Wins"
 	Wins.Value = profile.Data.Wins
 
+	local Mult = Instance.new("IntValue", leaderstats)
+    Mult.Name = "Multiplier"
+    Mult.Value = profile.Data.Multiplier
+
 	-- Conectar evento de cambio de nivel para actualizar velocidad
 	Level.Changed:Connect(function(newLevel)
 		if player.Character then

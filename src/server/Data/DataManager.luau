@@ -4,6 +4,14 @@ local DataManager = {}
 
 DataManager.Profiles = {}
 
+local function getExpEffectEvent()
+	local remoteEventsFolder = ReplicatedStorage:WaitForChild("RemoteEvents")
+	if remoteEventsFolder then
+		return remoteEventsFolder:WaitForChild("ExpEffectEvent")
+	end
+	return nil
+end
+
 -- Esperar a que exista el RemoteEvent (creado por RemoteEventsInit)
 local function getEfectoLvlUpEvent()
 	local remoteEventsFolder = ReplicatedStorage:WaitForChild("RemoteEvents", 10)
@@ -33,20 +41,10 @@ function DataManager.UpdateStat(player: Player, statName: string, newValue: any)
 	if not profile then
 		return
 	end
-	local oldValue = profile.Data[statName]
 	profile.Data[statName] = newValue
 
-	if statName == "EXP" and type(newValue) == "number" and type(oldValue) == "number" then
-		if newValue > oldValue then -- Solo si ganó exp, no si perdió
-			local remote = game.ReplicatedStorage:FindFirstChild("ExpEffectEvent")
-			if remote then
-				remote:FireClient(player) -- Enviamos la señal al jugador
-			end
-		end
-	end
-
 	-- Actualizar leaderstats si existe
-	if statName == "EXP" or statName == "Level" or statName == "Rebirths" or statName == "Wins" then
+	if statName == "EXP" or statName == "Level" or statName == "Rebirths" or statName == "Wins" or statName == "Multiplier" then
 		local ls = player:FindFirstChild("leaderstats")
 		if ls then
 			local statObj = ls:FindFirstChild(statName)
