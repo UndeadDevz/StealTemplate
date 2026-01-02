@@ -33,8 +33,17 @@ function DataManager.UpdateStat(player: Player, statName: string, newValue: any)
 	if not profile then
 		return
 	end
-
+	local oldValue = profile.Data[statName]
 	profile.Data[statName] = newValue
+
+	if statName == "EXP" and type(newValue) == "number" and type(oldValue) == "number" then
+		if newValue > oldValue then -- Solo si ganó exp, no si perdió
+			local remote = game.ReplicatedStorage:FindFirstChild("ExpEffectEvent")
+			if remote then
+				remote:FireClient(player) -- Enviamos la señal al jugador
+			end
+		end
+	end
 
 	-- Actualizar leaderstats si existe
 	if statName == "EXP" or statName == "Level" or statName == "Rebirths" or statName == "Wins" then
@@ -91,7 +100,7 @@ function DataManager.CheckLevelUp(player: Player): number
 		requiredExp = GetRequiredExp(currentLevel)
 
 		print("✨ " .. player.Name .. " subió al nivel " .. currentLevel .. "!")
-		
+
 		-- Disparar efecto visual de nivel a todos los clientes
 		local efectoEvent = getEfectoLvlUpEvent()
 		if efectoEvent and player.Character then
