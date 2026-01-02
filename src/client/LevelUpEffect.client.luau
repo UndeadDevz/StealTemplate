@@ -48,10 +48,12 @@ local sonidoOriginal = effectsFolder and effectsFolder:FindFirstChild("LevelUpSo
 
 -- Función para activar partículas temporalmente
 local function activarParticulas(particula)
-	if not particula:IsA("ParticleEmitter") then return end
-	
+	if not particula:IsA("ParticleEmitter") then
+		return
+	end
+
 	particula.Enabled = true
-	
+
 	-- Desactivar después de la duración configurada
 	task.delay(DURACION_EFECTO, function()
 		particula.Enabled = false
@@ -61,11 +63,15 @@ end
 -- Evento cuando alguien sube de nivel
 efectoLvlUp.OnClientEvent:Connect(function(personaje, nuevoNivel)
 	-- Validar que el personaje existe
-	if not personaje or not personaje:IsA("Model") then return end
-	
+	if not personaje or not personaje:IsA("Model") then
+		return
+	end
+
 	local root = personaje:FindFirstChild("HumanoidRootPart")
-	if not root then return end
-	
+	if not root then
+		return
+	end
+
 	-- REPRODUCIR SONIDO
 	if sonidoOriginal and sonidoOriginal:IsA("Sound") then
 		local sonidoClon = sonidoOriginal:Clone()
@@ -73,17 +79,17 @@ efectoLvlUp.OnClientEvent:Connect(function(personaje, nuevoNivel)
 		sonidoClon:Play()
 		Debris:AddItem(sonidoClon, sonidoClon.TimeLength + 0.1)
 	end
-	
+
 	-- Si no hay efecto configurado, solo mostrar mensaje en consola
 	if not efectoOriginal then
 		print("⭐ " .. personaje.Name .. " subió al nivel " .. nuevoNivel .. "!")
 		return
 	end
-	
+
 	-- Clonar el efecto localmente
 	local clon = efectoOriginal:Clone()
 	clon.Parent = root
-	
+
 	-- Ajustar posición y anclar al personaje
 	if clon:IsA("BasePart") then
 		clon.CFrame = root.CFrame
@@ -92,7 +98,7 @@ efectoLvlUp.OnClientEvent:Connect(function(personaje, nuevoNivel)
 		weld.Part1 = root
 		weld.Parent = clon
 	end
-	
+
 	-- ACTIVAR LAS PARTÍCULAS
 	-- 1. Las partículas dentro del Attachment
 	local attach = clon:FindFirstChildWhichIsA("Attachment")
@@ -101,15 +107,15 @@ efectoLvlUp.OnClientEvent:Connect(function(personaje, nuevoNivel)
 			activarParticulas(hijo)
 		end
 	end
-	
+
 	-- 2. Las partículas que están directamente en el objeto
 	for _, hijo in pairs(clon:GetChildren()) do
 		activarParticulas(hijo)
 	end
-	
+
 	-- Mostrar mensaje en consola
 	print("⭐ " .. personaje.Name .. " subió al nivel " .. nuevoNivel .. "!")
-	
+
 	-- Limpiar el efecto después del lifetime máximo de las partículas + duración
 	Debris:AddItem(clon, DURACION_EFECTO + 3)
 end)

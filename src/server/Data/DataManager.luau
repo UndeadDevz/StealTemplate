@@ -30,19 +30,23 @@ end
 
 function DataManager.UpdateStat(player: Player, statName: string, newValue: any)
 	local profile = DataManager.Profiles[player]
-	if not profile then return end
+	if not profile then
+		return
+	end
 
 	profile.Data[statName] = newValue
 
 	-- Actualizar leaderstats si existe
-	if statName == "EXP" or statName == "Level" or statName == "Rebirths" then
+	if statName == "EXP" or statName == "Level" or statName == "Rebirths" or statName == "Wins" then
 		local ls = player:FindFirstChild("leaderstats")
 		if ls then
 			local statObj = ls:FindFirstChild(statName)
-			if statObj then statObj.Value = newValue end
+			if statObj then
+				statObj.Value = newValue
+			end
 		end
 	end
-	
+
 	-- Si cambia el nivel, actualizar velocidad del personaje
 	if statName == "Level" and player.Character then
 		local humanoid = player.Character:FindFirstChild("Humanoid")
@@ -68,22 +72,24 @@ end
 -- Retorna: número de niveles subidos
 function DataManager.CheckLevelUp(player: Player): number
 	local profile = DataManager.Profiles[player]
-	if not profile then return 0 end
-	
+	if not profile then
+		return 0
+	end
+
 	local currentExp = profile.Data.EXP
 	local currentLevel = profile.Data.Level
 	local currentRebirths = profile.Data.Rebirths
 	local maxLevel = GetMaxLevel(currentRebirths)
 	local requiredExp = GetRequiredExp(currentLevel)
 	local levelsGained = 0
-	
+
 	-- Permitir subir múltiples niveles en un solo tick
 	while currentExp >= requiredExp and currentLevel < maxLevel do
 		currentExp = currentExp - requiredExp
 		currentLevel = currentLevel + 1
 		levelsGained = levelsGained + 1
 		requiredExp = GetRequiredExp(currentLevel)
-		
+
 		print("✨ " .. player.Name .. " subió al nivel " .. currentLevel .. "!")
 		
 		-- Disparar efecto visual de nivel a todos los clientes
@@ -92,15 +98,21 @@ function DataManager.CheckLevelUp(player: Player): number
 			efectoEvent:FireAllClients(player.Character, currentLevel)
 		end
 	end
-	
+
 	-- Si alcanzó el nivel máximo, mantener la EXP pero no permitir más niveles
 	if currentLevel >= maxLevel then
 		currentLevel = maxLevel
 		if levelsGained > 0 then
-			warn("🏆 " .. player.Name .. " alcanzó el nivel MÁXIMO (" .. maxLevel .. ") para su Rebirth actual. ¡Haz Rebirth para desbloquear más niveles!")
+			warn(
+				"🏆 "
+					.. player.Name
+					.. " alcanzó el nivel MÁXIMO ("
+					.. maxLevel
+					.. ") para su Rebirth actual. ¡Haz Rebirth para desbloquear más niveles!"
+			)
 		end
 	end
-	
+
 	-- Actualizar valores finales
 	if currentLevel ~= profile.Data.Level then
 		DataManager.UpdateStat(player, "Level", currentLevel)
@@ -108,7 +120,7 @@ function DataManager.CheckLevelUp(player: Player): number
 	if currentExp ~= profile.Data.EXP then
 		DataManager.UpdateStat(player, "EXP", currentExp)
 	end
-	
+
 	return levelsGained
 end
 
