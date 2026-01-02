@@ -1,6 +1,17 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
 local DataManager = {}
 
 DataManager.Profiles = {}
+
+-- Esperar a que exista el RemoteEvent (creado por RemoteEventsInit)
+local function getEfectoLvlUpEvent()
+	local remoteEventsFolder = ReplicatedStorage:WaitForChild("RemoteEvents", 10)
+	if remoteEventsFolder then
+		return remoteEventsFolder:WaitForChild("EfectoLvlUp", 10)
+	end
+	return nil
+end
 
 -- Calcula la EXP necesaria para subir de nivel
 local function GetRequiredExp(level: number)
@@ -74,6 +85,12 @@ function DataManager.CheckLevelUp(player: Player): number
 		requiredExp = GetRequiredExp(currentLevel)
 		
 		print("✨ " .. player.Name .. " subió al nivel " .. currentLevel .. "!")
+		
+		-- Disparar efecto visual de nivel a todos los clientes
+		local efectoEvent = getEfectoLvlUpEvent()
+		if efectoEvent and player.Character then
+			efectoEvent:FireAllClients(player.Character, currentLevel)
+		end
 	end
 	
 	-- Si alcanzó el nivel máximo, mantener la EXP pero no permitir más niveles
