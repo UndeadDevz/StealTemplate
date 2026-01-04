@@ -54,11 +54,20 @@ function DataManager.UpdateStat(player: Player, statName: string, newValue: any)
 		end
 	end
 
-	-- Si cambia el nivel, actualizar velocidad del personaje
+	-- Si cambia el nivel, actualizar velocidad del personaje respetando la velocidad personalizada
 	if statName == "Level" and player.Character then
 		local humanoid = player.Character:FindFirstChild("Humanoid")
 		if humanoid then
-			humanoid.WalkSpeed = CalculateWalkSpeed(newValue)
+			local maxSpeed = CalculateWalkSpeed(newValue)
+			local customSpeed = profile.Data.CustomSpeed or 0
+			
+			-- Si CustomSpeed es 0 o mayor al nuevo máximo, usar el máximo
+			-- Si no, usar la velocidad personalizada (clampeada al nuevo máximo)
+			if customSpeed == 0 or customSpeed > maxSpeed then
+				humanoid.WalkSpeed = maxSpeed
+			else
+				humanoid.WalkSpeed = math.clamp(customSpeed, 16, maxSpeed)
+			end
 		end
 	end
 end

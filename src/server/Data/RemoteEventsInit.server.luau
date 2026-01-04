@@ -27,3 +27,12 @@ if not efectoLvlUp then
 	efectoLvlUp.Parent = remoteEventsFolder
 	print("✅ RemoteEvent 'EfectoLvlUp' creado")
 end
+
+-- Crea el RemoteEvent para cambiar velocidad personalizada
+local setCustomSpeed = remoteEventsFolder:FindFirstChild("SetCustomSpeed")
+if not setCustomSpeed then
+	setCustomSpeed = Instance.new("RemoteEvent")
+	setCustomSpeed.Name = "SetCustomSpeed"
+	setCustomSpeed.Parent = remoteEventsFolder
+	print("✅ RemoteEvent 'SetCustomSpeed' creado")
+end

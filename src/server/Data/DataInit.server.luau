@@ -21,11 +21,26 @@ local function CalculateWalkSpeed(level: number)
 	return 16 + (level * 2)
 end
 
--- Actualiza la velocidad del personaje
-local function UpdateCharacterSpeed(character, level: number)
+-- Actualiza la velocidad del personaje respetando CustomSpeed
+local function UpdateCharacterSpeed(player: Player, character, level: number)
 	local humanoid = character:FindFirstChild("Humanoid")
 	if humanoid then
-		humanoid.WalkSpeed = CalculateWalkSpeed(level)
+		local profile = DataManager.Profiles[player]
+		local maxSpeed = CalculateWalkSpeed(level)
+		
+		if profile then
+			local customSpeed = profile.Data.CustomSpeed or 0
+			
+			-- Si CustomSpeed es 0 o mayor al máximo, usar el máximo
+			-- Si no, usar la velocidad personalizada (clampeada al máximo)
+			if customSpeed == 0 or customSpeed > maxSpeed then
+				humanoid.WalkSpeed = maxSpeed
+			else
+				humanoid.WalkSpeed = math.clamp(customSpeed, 16, maxSpeed)
+			end
+		else
+			humanoid.WalkSpeed = maxSpeed
+		end
 	end
 end
 
@@ -58,18 +73,19 @@ local function Initialize(player: Player, profile: typeof(PlayerStore:StartSessi
 	-- Conectar evento de cambio de nivel para actualizar velocidad
 	Level.Changed:Connect(function(newLevel)
 		if player.Character then
-			UpdateCharacterSpeed(player.Character, newLevel)
+			UpdateCharacterSpeed(player, player.Character, newLevel)
 		end
 	end)
 
 	-- Aplicar velocidad cuando el personaje spawns/respawns
 	player.CharacterAdded:Connect(function(character)
-		UpdateCharacterSpeed(character, Level.Value)
+		character:WaitForChild("Humanoid") -- Esperar a que exista el Humanoid
+		UpdateCharacterSpeed(player, character, Level.Value)
 	end)
 
 	-- Aplicar velocidad al personaje actual si ya existe
 	if player.Character then
-		UpdateCharacterSpeed(player.Character, Level.Value)
+		UpdateCharacterSpeed(player, player.Character, Level.Value)
 	end
 end
 

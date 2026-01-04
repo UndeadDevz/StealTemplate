@@ -5,4 +5,5 @@ return {
 	Wins = 0,
 	EquipType = 1,
 	Multiplier = 1,
+	CustomSpeed = 0, -- 0 significa "usar máximo", cualquier otro valor es la velocidad personalizada
 }
