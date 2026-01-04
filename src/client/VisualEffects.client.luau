@@ -27,26 +27,39 @@ local function SpawnWings()
 	icon.Name = "ExpWings"
 	icon.Image = WINGS_ICON_ID
 	icon.BackgroundTransparency = 1
-	icon.Size = UDim2.new(0, 100, 0, 100) -- Tamaño de las alas
+	icon.Size = UDim2.new(0, 70, 0, 70) -- Tamaño inicial (30% más pequeño: 100 -> 70)
 	icon.AnchorPoint = Vector2.new(0.5, 0.5) -- Centro exacto
-	icon.Position = UDim2.new(0.5, 0, 0.5, 0) -- Centro de la pantalla
+	
+	-- Punto de origen aleatorio en un área central de la pantalla
+	local originX = math.random(-150, 150)
+	local originY = math.random(-120, 120)
+	icon.Position = UDim2.new(0.5, originX, 0.5, originY)
+	
 	icon.ZIndex = 10
 	icon.Parent = screenGui
 
-	-- 2. Calcular dirección aleatoria
-	local randomX = math.random(-200, 200)
-	local randomY = math.random(-200, 200) -- Puede ir arriba o abajo
+	-- 2. Calcular dirección HACIA AFUERA desde el punto de origen
+	-- Si originX es positivo, va más a la derecha. Si es negativo, va más a la izquierda.
+	local directionX = originX >= 0 and 1 or -1
+	local directionY = originY >= 0 and 1 or -1
+	
+	-- Distancia aleatoria hacia afuera (siempre positiva, la dirección la define el signo)
+	local distanceX = math.random(200, 400)
+	local distanceY = math.random(160, 320)
+	
+	local randomX = originX + (distanceX * directionX)
+	local randomY = originY + (distanceY * directionY)
 
-	-- Posición final a donde volarán
+	-- Posición final a donde volarán (siempre hacia afuera del centro)
 	local endPos = UDim2.new(0.5, randomX, 0.5, randomY)
 
 	-- 3. Animación (Mover + Desvanecer + Crecer un poco)
-	local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local tweenInfo = TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 	local goal = {
 		Position = endPos,
 		ImageTransparency = 1, -- Desaparece
-		Size = UDim2.new(0, 150, 0, 150), -- Crece un poco al salir
+		Size = UDim2.new(0, 105, 0, 105), -- Crece un poco al salir (30% más pequeño: 150 -> 105)
 	}
 
 	local tween = TweenService:Create(icon, tweenInfo, goal)
