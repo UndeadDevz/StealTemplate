@@ -24,10 +24,11 @@
 	     "REBIRTH - Toca para reiniciar tu nivel y multiplicar tu EXP"
 	
 	REQUISITOS DE REBIRTH:
-	- Rebirth 0 → Requiere Nivel 20
-	- Rebirth 1 → Requiere Nivel 30
-	- Rebirth 2 → Requiere Nivel 40
-	- Y así sucesivamente (+10 niveles por cada Rebirth)
+	- Rebirth 0 → Requiere Nivel 25
+	- Rebirth 1 → Requiere Nivel 50
+	- Rebirth 2 → Requiere Nivel 75
+	- Y así sucesivamente (+25 niveles por cada Rebirth)
+	- Hard cap: Nivel 375
 	
 	BENEFICIOS:
 	- Cada Rebirth multiplica la ganancia de EXP
@@ -56,10 +57,10 @@ local function IntentarRebirth(player: Player)
 	if not level or not rebirths then return false end
 	
 	local rebirthsActuales = rebirths.Value
-	
-	-- REGLA: Cada rebirth pide 10 niveles más que el anterior
-	-- Rebirth 0 pide Nivel 20, Rebirth 1 pide Nivel 30, etc.
-	local nivelRequerido = 20 + (rebirthsActuales * 10)
+
+	-- REGLA: Cada rebirth pide 25 niveles más que el anterior
+	-- Rebirth 0 pide Nivel 25, Rebirth 1 pide Nivel 50, etc.
+	local nivelRequerido = 25 + (rebirthsActuales * 25)
 	
 	if level.Value >= nivelRequerido then
 		-- Realizar Rebirth

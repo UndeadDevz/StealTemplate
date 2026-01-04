@@ -21,24 +21,27 @@ while true do
 			
 			-- Verificar si está vivo y moviéndose
 			if humanoid.Health > 0 and humanoid.MoveDirection.Magnitude > 0 then
-				-- [[ LÓGICA DE CÁLCULO ]] --
-				
+				-- [[ LÓGICA DE CÁLCULO - HÍBRIDO ]] --
+
 				-- 1. Obtener Base (EquipType)
 				local baseExp = DataManager.GetStat(player, "EquipType") or 1
-				local speedMult = DataManager.GetStat(player, "Multiplier") or 1
-				
+
 				-- 2. Obtener Multiplicador de Rebirth
 				local rebirths = DataManager.GetStat(player, "Rebirths") or 0
 				local rebirthMult = rebirths * 0.5 + 1
-				
-				-- 3. Calcular Total
-				-- Fórmula: Base (Herramienta) * Rebirth * Speed
-				local finalExp = baseExp * rebirthMult * speedMult
-				
+
+				-- 3. Obtener Multiplicador de Velocidad (convertido a boost aditivo)
+				local speedMult = DataManager.GetStat(player, "Multiplier") or 1
+				local speedBoost = speedMult - 1  -- 2x → +1, 4x → +3, etc.
+
+				-- FÓRMULA HÍBRIDA: (Base * Rebirth) × (1 + Sum of Boosts)
+				local baseValue = baseExp * rebirthMult
+				local finalExp = baseValue * (1 + speedBoost)
+
 				DataManager.AddStat(player, "EXP", finalExp)
 				DataManager.AddStat(player, "TotalEXP", finalExp)
 				DataManager.CheckLevelUp(player)
-				
+
 				-- [[ FIN LÓGICA ]] --
 			end
 		end

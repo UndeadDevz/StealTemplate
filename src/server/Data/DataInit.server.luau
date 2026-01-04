@@ -7,7 +7,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ProfileStore = require(ServerScriptService.Libraries:WaitForChild("ProfileStore"))
 
 local function GetStoreName()
-	return RunService:IsStudio() and "Test" or "Live"
+	return RunService:IsStudio() and "Test1" or "Live"
 end
 
 local Template = require(ServerScriptService.Data.Template)

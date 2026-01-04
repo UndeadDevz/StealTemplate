@@ -21,9 +21,21 @@ local function getEfectoLvlUpEvent()
 	return nil
 end
 
--- Calcula la EXP necesaria para subir de nivel
+-- Obtiene el ratio de crecimiento según el nivel
+local function GetRatioForLevel(level: number): number
+	if level <= 25 then return 1.05
+	elseif level <= 50 then return 1.10
+	elseif level <= 125 then return 1.15
+	elseif level <= 175 then return 1.20
+	elseif level <= 275 then return 1.25
+	else return 1.30  -- 276+
+	end
+end
+
+-- Calcula la EXP necesaria para subir de nivel (Exponencial)
 local function GetRequiredExp(level: number)
-	return level * 100
+	local ratio = GetRatioForLevel(level)
+	return math.floor(51 * (ratio ^ level))
 end
 
 -- Calcula la velocidad del personaje basada en el nivel
@@ -31,9 +43,10 @@ local function CalculateWalkSpeed(level: number)
 	return 16 + (level * 2)
 end
 
--- Calcula el nivel máximo según los rebirths
+-- Calcula el nivel máximo según los rebirths (Hard cap at 375)
 local function GetMaxLevel(rebirths: number)
-	return 20 + (rebirths * 10)
+	local calculatedMax = 25 + (rebirths * 25)  -- Every 25 levels
+	return math.min(calculatedMax, 375)  -- Hard cap at 375
 end
 
 function DataManager.UpdateStat(player: Player, statName: string, newValue: any)

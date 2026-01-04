@@ -177,6 +177,7 @@ El sistema se integra automáticamente con:
 ## 🔄 Actualización del default.project.json
 
 Asegúrate de que tu configuración de Rojo incluya:
+no va replicated storage
 
 ```json
 {

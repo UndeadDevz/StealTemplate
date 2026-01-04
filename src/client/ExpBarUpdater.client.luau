@@ -2,6 +2,9 @@ local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
+-- Import centralized NumberFormatter
+local NumberFormatter = require(ReplicatedStorage:WaitForChild("Utils"):WaitForChild("NumberFormatter"))
+
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local buttonsGui = playerGui:WaitForChild("Buttons")
@@ -17,26 +20,27 @@ local getStat = remoteEvents:WaitForChild("GetStat")
 -- Configuración de suavizado
 local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
--- Función de formateo (1500 -> 1.5k)
-local function formatNumber(n)
-	if n < 1000 then return tostring(math.floor(n)) end
-	local suffixes = {"", "k", "M", "B", "T"}
-	local index = 1
-	while n >= 1000 and index < #suffixes do
-		n = n / 1000
-		index = index + 1
+-- Obtiene el ratio de crecimiento según el nivel
+local function getRatioForLevel(level: number): number
+	if level <= 25 then return 1.05
+	elseif level <= 50 then return 1.10
+	elseif level <= 125 then return 1.15
+	elseif level <= 175 then return 1.20
+	elseif level <= 275 then return 1.25
+	else return 1.30  -- 276+
 	end
-	return string.format("%.1f%s", n, suffixes[index]):gsub("%.0", "")
 end
 
--- Calcula la EXP necesaria para subir de nivel
+-- Calcula la EXP necesaria para subir de nivel (Exponencial)
 local function getRequiredExp(level)
-	return level * 100
+	local ratio = getRatioForLevel(level)
+	return math.floor(51 * (ratio ^ level))
 end
 
--- Calcula el nivel máximo según los rebirths
+-- Calcula el nivel máximo según los rebirths (Hard cap at 375)
 local function getMaxLevel(rebirths)
-	return 20 + (rebirths * 10)
+	local calculatedMax = 25 + (rebirths * 25)
+	return math.min(calculatedMax, 375)
 end
 
 local function updateExp(currentExp, level, rebirths)
@@ -50,7 +54,7 @@ local function updateExp(currentExp, level, rebirths)
 		TweenService:Create(bar, tweenInfo, {Size = targetSize}):Play()
 
 		-- Texto mostrando EXP completa
-		text.Text = formatNumber(maxExp) .. " / " .. formatNumber(maxExp)
+		text.Text = NumberFormatter.FormatProgress(maxExp, maxExp)
 
 		-- Nivel MAX
 		levelText.Text = "MAX"
@@ -60,7 +64,7 @@ local function updateExp(currentExp, level, rebirths)
 		local targetSize = UDim2.fromScale(ratio, 1)
 		TweenService:Create(bar, tweenInfo, {Size = targetSize}):Play()
 
-		text.Text = formatNumber(currentExp) .. " / " .. formatNumber(maxExp)
+		text.Text = NumberFormatter.FormatProgress(currentExp, maxExp)
 		levelText.Text = tostring(level)
 	end
 end

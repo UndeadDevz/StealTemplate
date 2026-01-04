@@ -182,7 +182,7 @@ local MAX_MESSAGE_QUEUE = 1000 -- Max messages saved in a profile that were sent
 
 ----- Dependencies -----
 
--- local Util = require(game.ReplicatedStorage.Shared.Util)
+-- local Util = require(game.ReplicatedStorage.Utils)
 -- local Signal = Util.Signal
 
 local Signal do

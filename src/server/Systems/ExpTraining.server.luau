@@ -25,25 +25,29 @@ while true do
 				-- Obtener estadísticas de forma segura usando DataManager
 				local level = DataManager.GetStat(player, "Level") or 1
 				local rebirths = DataManager.GetStat(player, "Rebirths") or 0
-				local maxLevel = 20 + (rebirths * 10)
+				local maxLevel = math.min(25 + (rebirths * 25), 375)  -- Hard cap at 375
 				
 				if level < maxLevel then
-					-- [[ NUEVA LÓGICA DE CÁLCULO ]] --
+					-- [[ NUEVA LÓGICA DE CÁLCULO - HÍBRIDO ]] --
 
 					-- 1. Obtener Base (EquipType)
 					local baseExp = DataManager.GetStat(player, "EquipType") or 1
-					
+
 					-- 2. Obtener Multiplicador de Zona (El atributo del cubo)
 					-- Si el cubo no tiene atributo, asumimos multiplicador x1
 					local zonaMult = zona:GetAttribute("ExpBase") or 1
-					
+
 					-- 3. Obtener Multiplicador de Rebirth
 					local rebirthMult = rebirths * 0.5 + 1
+
+					-- 4. Obtener Multiplicador de Velocidad (convertido a boost aditivo)
 					local speedMult = DataManager.GetStat(player, "Multiplier") or 1
-					
-					-- FÓRMULA FINAL: Base * Zona * Rebirth
-					local expGanada = baseExp * zonaMult * rebirthMult * speedMult
-					
+					local speedBoost = speedMult - 1  -- 2x → +1, 4x → +3, etc.
+
+					-- FÓRMULA HÍBRIDA: (Base * Zona * Rebirth) × (1 + Sum of Boosts)
+					local baseValue = baseExp * zonaMult * rebirthMult
+					local expGanada = baseValue * (1 + speedBoost)
+
 					-- [[ FIN NUEVA LÓGICA ]] --
 					
 					DataManager.AddStat(player, "EXP", expGanada)
