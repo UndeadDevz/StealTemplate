@@ -156,18 +156,21 @@ local function applyFontToAll(fontName, fontWeight)
 	-- If you want "real weight", buyers can implement FontFace later.
 	local f = FONT_MAP[fontName] or Enum.Font.Arimo
 
-	for _, obj in ipairs(TEXT_OBJECTS) do
-		if obj and obj.Parent then
-			obj.Font = f
-			-- Optional light "weight feel":
-			-- Bold -> keep stroke visible
-			-- Thin -> hide stroke more
-			if fontWeight == "Thin" then
-				obj.TextStrokeTransparency = 0.35
-			elseif fontWeight == "Bold" then
-				obj.TextStrokeTransparency = 0
-			else
-				obj.TextStrokeTransparency = 0
+	-- Apply to ALL text objects in ALL ScreenGuis in PlayerGui
+	for _, screenGui in ipairs(playerGui:GetChildren()) do
+		if screenGui:IsA("ScreenGui") then
+			for _, obj in ipairs(screenGui:GetDescendants()) do
+				if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+					obj.Font = f
+					-- Optional light "weight feel":
+					if fontWeight == "Thin" then
+						obj.TextStrokeTransparency = 0.35
+					elseif fontWeight == "Bold" then
+						obj.TextStrokeTransparency = 0
+					else
+						obj.TextStrokeTransparency = 0
+					end
+				end
 			end
 		end
 	end
@@ -579,7 +582,23 @@ end
 local soundBar, soundFill, soundKnob = makeSlider(audioCard, "Sound", 0, "Sound")
 local musicBar, musicFill, musicKnob = makeSlider(audioCard, "Music", 0.5, "Music")
 
-local function bindSlider(bar, fill, knob)
+-- Real-time volume application functions
+local function applyVolumeToSoundGroup(groupName, volume)
+	local group = SoundService:FindFirstChild(groupName)
+	if group and group:IsA("SoundGroup") then
+		group.Volume = volume
+	end
+end
+
+local function applySoundVolume(volume)
+	applyVolumeToSoundGroup("SFX", volume)
+end
+
+local function applyMusicVolume(volume)
+	applyVolumeToSoundGroup("Music", volume)
+end
+
+local function bindSlider(bar, fill, knob, onChangeCallback)
 	local dragging = false
 
 	local function setFromX(x)
@@ -588,6 +607,10 @@ local function bindSlider(bar, fill, knob)
 		local alpha = math.clamp((x - absPos) / absSize, 0, 1)
 		fill.Size = UDim2.new(alpha, 0, 1, 0)
 		knob.Position = UDim2.new(alpha, -9, 0.5, -9)
+		-- Apply change immediately if callback provided
+		if onChangeCallback then
+			onChangeCallback(alpha)
+		end
 		return alpha
 	end
 
@@ -617,8 +640,8 @@ local function bindSlider(bar, fill, knob)
 	end
 end
 
-local getSound = bindSlider(soundBar, soundFill, soundKnob)
-local getMusic = bindSlider(musicBar, musicFill, musicKnob)
+local getSound = bindSlider(soundBar, soundFill, soundKnob, applySoundVolume)
+local getMusic = bindSlider(musicBar, musicFill, musicKnob, applyMusicVolume)
 
 --========================================================
 -- AUDIO FILTERS (Players can choose what to mute)
