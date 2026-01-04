@@ -49,10 +49,7 @@ while true do
 						local finalExp = baseExp * rebirthMult * speedMult
 						
 						DataManager.AddStat(player, "EXP", finalExp)
-						DataManager.CheckLevelUp(player)
-						
-						-- [[ FIN NUEVA LÓGICA ]] --
-					end
+					DataManager.AddStat(player, "TotalEXP", finalExp)
 				end
 				
 				lastPositions[player] = currentPos

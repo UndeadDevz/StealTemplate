@@ -47,6 +47,7 @@ while true do
 					-- [[ FIN NUEVA LÓGICA ]] --
 					
 					DataManager.AddStat(player, "EXP", expGanada)
+					DataManager.AddStat(player, "TotalEXP", expGanada)
 					DataManager.CheckLevelUp(player)
 				end
 			end

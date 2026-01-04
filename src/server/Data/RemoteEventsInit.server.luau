@@ -36,3 +36,19 @@ if not setCustomSpeed then
 	setCustomSpeed.Parent = remoteEventsFolder
 	print("✅ RemoteEvent 'SetCustomSpeed' creado")
 end
+
+-- Crea el RemoteFunction para obtener stats
+local DataManager = require(script.Parent.DataManager)
+
+local getStat = remoteEventsFolder:FindFirstChild("GetStat")
+if not getStat then
+	getStat = Instance.new("RemoteFunction")
+	getStat.Name = "GetStat"
+	getStat.Parent = remoteEventsFolder
+	print("✅ RemoteFunction 'GetStat' creado")
+end
+
+-- Handler para GetStat
+getStat.OnServerInvoke = function(player, statName)
+	return DataManager.GetStat(player, statName)
+end
