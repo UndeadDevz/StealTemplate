@@ -6,44 +6,83 @@ This document explains the complete progression system implemented in the game, 
 
 ---
 
-## 1. EXP Requirements (The Curve)
+## 1. EXP Requirements (Sistema de 3 Fases)
 
-### Formula
+### Fórmulas por Fase
 
+El juego utiliza **tres fases distintas** de progresión:
+
+#### **FASE 1: Tutorial (Niveles 0-25) - Crecimiento LINEAL**
 ```lua
-EXP_Required = 51 × (Ratio ^ Level)
+EXP_Required = 51 + (Level × 13)
+```
+- **Sensación:** Muy fluida, enganche inicial
+- **Incremento:** ~13 puntos por nivel
+- **Propósito:** Aprender mecánicas sin frustración
+
+#### **FASE 2: Transición (Niveles 26-75) - Crecimiento EXPONENCIAL SUAVE**
+
+**Fase 2A (26-50):** Ratio 1.05
+```lua
+EXP_Required = 373 × (1.05 ^ (Level - 25))
 ```
 
-### Ratio by Level Blocks
+**Fase 2B (51-75):** Ratio 1.10
+```lua
+EXP_Required = 2,120 × (1.10 ^ (Level - 50))
+```
+- **Sensación:** La curva empieza a empinarse
+- **Propósito:** Transición gradual al grind
 
-| Level Range | Block Size | Ratio | Difficulty            |
-| ----------- | ---------- | ----- | --------------------- |
-| 1 - 25      | 25 levels  | 1.05  | Tutorial (Very fluid) |
-| 26 - 50     | 25 levels  | 1.10  | Early challenge       |
-| 51 - 125    | 75 levels  | 1.15  | Mid-game grind        |
-| 126 - 175   | 50 levels  | 1.20  | First wall            |
-| 176 - 275   | 100 levels | 1.25  | Late-game wall        |
-| 276 - 375   | 100 levels | 1.30  | Endgame (Hard cap)    |
+#### **FASE 3: Muro Exponencial (Niveles 76+) - Ratio 1.15**
+```lua
+EXP_Required = 35,650 × (1.15 ^ (Level - 75))
+```
+- **Sensación:** Cada 5 niveles la EXP se DUPLICA
+- **Nivel 100:** 1.17M EXP
+- **Nivel 105:** 2.36M EXP ⭐
+- **Hard cap:** Nivel 375
 
-### Key Breakpoints (Approximate EXP Required)
+### Key Breakpoints (Sistema de 3 Fases)
 
-| Level | Ratio | EXP for This Level | Cumulative EXP | Notes                   |
-| ----- | ----- | ------------------ | -------------- | ----------------------- |
-| 1     | 1.05  | 51                 | 0              | Starting point          |
-| 10    | 1.05  | 81                 | 626            | Early game              |
-| 25    | 1.05  | 173                | 2,635          | First rebirth available |
-| 26    | 1.10  | 294                | 2,929          | Ratio increases!        |
-| 50    | 1.10  | 6,178              | 56,253         | Second rebirth          |
-| 51    | 1.15  | 11,716             | 67,969         | Ratio increases!        |
-| 75    | 1.15  | 205,419            | 2.05M          | Current "wall" zone     |
-| 100   | 1.15  | 3.6M               | ~40M           | Deep mid-game           |
-| 125   | 1.15  | 63M                | ~700M          | Third rebirth           |
-| 126   | 1.20  | 151M               | ~850M          | Ratio increases!        |
-| 175   | 1.20  | ~1.5Qa             | ~15Qa          | Quadrillion territory   |
-| 275   | 1.25  | Astronomical       | Astronomical   | Endgame                 |
-| 375   | 1.30  | Maximum            | Maximum        | **HARD CAP**            |
+| Nivel | Fase | EXP Requerida | Incremento vs Anterior | Notas |
+| ----- | ---- | ------------- | ---------------------- | ----- |
+| **FASE 1: Tutorial (Lineal)** |||||
+| 0     | 1    | 51            | Base                   | Inicio del juego |
+| 5     | 1    | 116           | +13/nivel              | Early tutorial |
+| 10    | 1    | 181           | +13/nivel              | Mid tutorial |
+| 20    | 1    | 311           | +13/nivel              | Late tutorial |
+| 25    | 1    | 376           | +13/nivel              | 🔄 **1er Rebirth** |
+| **FASE 2A: Transición (Ratio 1.05)** |||||
+| 30    | 2A   | 476           | +20 aprox              | Empieza transición |
+| 40    | 2A   | 774           | +45 aprox              | Crecimiento visible |
+| 50    | 2A   | 1.26k         | +97 aprox              | 🔄 **2do Rebirth** |
+| **FASE 2B: Transición (Ratio 1.10)** |||||
+| 60    | 2B   | 5.5k          | 4x más                 | Curva se empina |
+| 70    | 2B   | 14.3k         | 2.6x más               | Entrando al grind |
+| 75    | 2B   | 23.2k         | 1.6x más               | 🔄 **3er Rebirth** |
+| **FASE 3: Muro Exponencial (Ratio 1.15)** |||||
+| 80    | 3    | 72.2k         | 3x más                 | ⚠️ Muro empieza |
+| 88    | 3    | 209k          | 2.9x en 8 niveles      | Exponencial clara |
+| 90    | 3    | 269k          | 2x cada 5 niveles      | Patrón establecido |
+| 95    | 3    | 541k          | 2x confirmado          | Grind intenso |
+| 100   | 3    | **1.17M**     | 2x cada 5 niveles      | 🔄 **4to Rebirth** - Cruce del millón |
+| **105** | **3** | **2.36M** ⭐ | **2x cada 5 niveles** | 🔄 **TARGET** - El gran muro |
+| 110   | 3    | 4.75M         | 2x cada 5 niveles      | Post-muro |
+| 125   | 3    | 24.4M         | 5x en 15 niveles       | 🔄 **5to Rebirth** |
+| 150   | 3    | 315M          | ~13x en 25 niveles     | 🔄 **6to Rebirth** |
+| 175   | 3    | 4.1B          | ~13x en 25 niveles     | 🔄 **7mo Rebirth** |
+| 200   | 3    | 52.9B         | ~13x en 25 niveles     | 🔄 **8vo Rebirth** |
+| 250   | 3    | 8.8T          | ~166x en 50 niveles    | 🔄 **10mo Rebirth** |
+| 275   | 3    | 114T          | ~13x en 25 niveles     | 🔄 **11vo Rebirth** |
+| 300   | 3    | 1.48Qa        | ~13x en 25 niveles     | 🔄 **12vo Rebirth** |
+| 350   | 3    | 254Qa         | ~172x en 50 niveles    | 🔄 **14vo Rebirth** |
+| **375** | **3** | **3.29Qi**   | ~13x en 25 niveles     | 🔄 **HARD CAP (Rebirth 15)** |
 
-**Note:** Values beyond level 100 become extremely large due to exponential growth.
+**Leyenda:**
+- ⭐ = Objetivo de diseño alcanzado
+- 🔄 = Rebirth disponible
+- ⚠️ = Cambio significativo en dificultad
 
 ---
 

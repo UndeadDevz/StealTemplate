@@ -21,21 +21,30 @@ local function getEfectoLvlUpEvent()
 	return nil
 end
 
--- Obtiene el ratio de crecimiento según el nivel
-local function GetRatioForLevel(level: number): number
-	if level <= 25 then return 1.05
-	elseif level <= 50 then return 1.10
-	elseif level <= 125 then return 1.15
-	elseif level <= 175 then return 1.20
-	elseif level <= 275 then return 1.25
-	else return 1.30  -- 276+
-	end
-end
-
--- Calcula la EXP necesaria para subir de nivel (Exponencial)
+-- Calcula la EXP necesaria para subir de nivel
+-- Sistema de 3 fases: Lineal → Transición → Exponencial
 local function GetRequiredExp(level: number)
-	local ratio = GetRatioForLevel(level)
-	return math.floor(51 * (ratio ^ level))
+	if level <= 25 then
+		-- FASE 1: Tutorial (Lineal) - Niveles 0-25
+		-- Crecimiento de ~13 puntos por nivel
+		return math.floor(51 + (level * 13))
+
+	elseif level <= 50 then
+		-- FASE 2A: Transición Temprana (Ratio 1.05) - Niveles 26-50
+		-- Los números empiezan a multiplicarse suavemente
+		return math.floor(373 * (1.05 ^ (level - 25)))
+
+	elseif level <= 75 then
+		-- FASE 2B: Transición Media (Ratio 1.10) - Niveles 51-75
+		-- La curva empieza a empinarse
+		return math.floor(2120 * (1.10 ^ (level - 50)))
+
+	else
+		-- FASE 3: Muro Exponencial (Ratio 1.15) - Niveles 76+
+		-- Cada 5 niveles la EXP se duplica
+		-- Nivel 100 = 1.17M, Nivel 105 = 2.36M
+		return math.floor(35650 * (1.15 ^ (level - 75)))
+	end
 end
 
 -- Calcula la velocidad del personaje basada en el nivel
