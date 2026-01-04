@@ -1,12 +1,13 @@
 local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
-local leaderstats = player:WaitForChild("leaderstats")
-
-local currentExp = leaderstats:WaitForChild("EXP")
+-- Esperar RemoteFunction
+local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
+local getStat = remoteEvents:WaitForChild("GetStat")
 
 
 -- Crear una GUI contenedora si no existe
@@ -57,5 +58,16 @@ local function SpawnWings()
 	end)
 end
 
-currentExp.Changed:Connect(SpawnWings)
--- Escuchar el evento del servidor
+-- Monitorear cambios de EXP cada 0.5 segundos
+local lastExp = 0
+task.spawn(function()
+	while task.wait(0.5) do
+		local currentExp = getStat:InvokeServer("EXP")
+		if currentExp and currentExp > lastExp then
+			SpawnWings()
+			lastExp = currentExp
+		elseif currentExp then
+			lastExp = currentExp
+		end
+	end
+end)

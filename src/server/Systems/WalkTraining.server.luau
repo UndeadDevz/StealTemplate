@@ -54,6 +54,7 @@ while true do
 						
 						-- [[ FIN NUEVA LÓGICA ]] --
 					end
+				end
 				
 				lastPositions[player] = currentPos
 			else

@@ -36,6 +36,11 @@ local currentProductID = nil
 
 local function UpdateUI()
 	local currentMult = getStat:InvokeServer("Multiplier")
+	
+	-- Si currentMult es nil, esperar
+	if not currentMult then
+		return
+	end
 
 	-- Buscar la SIGUIENTE mejora disponible
 	local nextUpgrade = nil
