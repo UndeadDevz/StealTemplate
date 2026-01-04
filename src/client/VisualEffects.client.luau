@@ -58,10 +58,10 @@ local function SpawnWings()
 	end)
 end
 
--- Monitorear cambios de EXP cada 0.5 segundos
+-- Monitorear cambios de EXP cada 0.1 segundos (10 veces por segundo)
 local lastExp = 0
 task.spawn(function()
-	while task.wait(0.5) do
+	while task.wait(0.1) do
 		local currentExp = getStat:InvokeServer("EXP")
 		if currentExp and currentExp > lastExp then
 			SpawnWings()

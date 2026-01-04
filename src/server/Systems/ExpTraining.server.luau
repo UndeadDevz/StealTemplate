@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local DataManager = require(script.Parent.Parent.Data.DataManager)
 
 while true do
-	task.wait(1)
+	task.wait(0.1) -- 10 veces por segundo
 	
 	local zonasEXP = workspace:FindFirstChild("ZonasEXP")
 	if not zonasEXP then
