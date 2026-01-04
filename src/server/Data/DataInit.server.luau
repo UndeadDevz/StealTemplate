@@ -50,10 +50,6 @@ local function Initialize(player: Player, profile: typeof(PlayerStore:StartSessi
 	local leaderstats = Instance.new("Folder", player)
 	leaderstats.Name = "leaderstats"
 
-	local EXP = Instance.new("NumberValue", leaderstats)
-	EXP.Name = "EXP"
-	EXP.Value = profile.Data.EXP
-
 	local Level = Instance.new("IntValue", leaderstats)
 	Level.Name = "Level"
 	Level.Value = profile.Data.Level
@@ -65,10 +61,6 @@ local function Initialize(player: Player, profile: typeof(PlayerStore:StartSessi
 	local Wins = Instance.new("IntValue", leaderstats)
 	Wins.Name = "Wins"
 	Wins.Value = profile.Data.Wins
-
-	local Mult = Instance.new("IntValue", leaderstats)
-    Mult.Name = "Multiplier"
-    Mult.Value = profile.Data.Multiplier
 
 	local Speed = Instance.new("NumberValue", leaderstats)
 	Speed.Name = "Speed"
