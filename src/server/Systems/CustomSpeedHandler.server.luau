@@ -41,11 +41,17 @@ setCustomSpeedEvent.OnServerEvent:Connect(function(player: Player, velocidadDese
 	local nivel = DataManager.GetStat(player, "Level") or 1
 	local maxSpeedPermitida = GetMaxSpeed(nivel)
 	
-	-- Aplicar clamp para mantener la velocidad en rango válido
-	local velocidadFinal = math.clamp(velocidadDeseada, BASE_SPEED, maxSpeedPermitida)
+	local velocidadFinal
 	
-	-- Guardar la velocidad personalizada en el perfil del jugador
-	DataManager.UpdateStat(player, "CustomSpeed", velocidadFinal)
+	-- Si es 0, significa "sin límite" → usar máximo y guardar 0
+	if velocidadDeseada == 0 then
+		velocidadFinal = maxSpeedPermitida
+		DataManager.UpdateStat(player, "CustomSpeed", 0) -- 0 = sin límite
+	else
+		-- Aplicar clamp para mantener la velocidad en rango válido
+		velocidadFinal = math.clamp(velocidadDeseada, BASE_SPEED, maxSpeedPermitida)
+		DataManager.UpdateStat(player, "CustomSpeed", velocidadFinal)
+	end
 	
 	-- Aplicar la velocidad al humanoid
 	local character = player.Character
