@@ -10,6 +10,7 @@
 ]]
 
 local MarketplaceService = game:GetService("MarketplaceService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 local player = Players.LocalPlayer
@@ -18,6 +19,10 @@ local buttonsGui = playerGui:WaitForChild("Buttons")
 local button = buttonsGui:WaitForChild("SpeedMultiplier")
 local priceLabel = button:WaitForChild("PriceLabel")
 local speedLabel = button:WaitForChild("SpeedLabel")
+
+-- Esperar RemoteFunction
+local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
+local getStat = remoteEvents:WaitForChild("GetStat")
 
 -- Configuración ordenada por niveles
 local UPGRADES = {
@@ -30,8 +35,7 @@ local UPGRADES = {
 local currentProductID = nil
 
 local function UpdateUI()
-	local leaderstats = player:WaitForChild("leaderstats")
-	local currentMult = leaderstats:WaitForChild("Multiplier").Value
+	local currentMult = getStat:InvokeServer("Multiplier")
 
 	-- Buscar la SIGUIENTE mejora disponible
 	local nextUpgrade = nil
@@ -66,11 +70,13 @@ button.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Actualizar cuando cambie el stat (ej. después de comprar)
-local leaderstats = player:WaitForChild("leaderstats")
-local multStat = leaderstats:WaitForChild("Multiplier")
+-- Actualizar cada 1 segundo para detectar cambios en Multiplier
+task.spawn(function()
+	while task.wait(1) do
+		UpdateUI()
+	end
+end)
 
-multStat.Changed:Connect(UpdateUI)
 UpdateUI() -- Ejecutar al inicio
 
 print("✅ SpeedMultiplierHandler inicializado")
