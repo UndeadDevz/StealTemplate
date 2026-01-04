@@ -52,10 +52,24 @@ if not gui then
 	gui.Parent = playerGui
 else
 	print("[SettingsUi DEBUG] Found existing ScreenGui:", gui:GetFullName())
+	-- List ALL elements for debugging
+	print("[SettingsUi DEBUG] Children in ScreenGui:")
+	for _, child in ipairs(gui:GetDescendants()) do
+		print("  -", child.Name, "(" .. child.ClassName .. ") Parent:", child.Parent.Name)
+	end
+	-- Clean up ALL old UI elements (except the SettingsButton and scripts)
+	for _, child in ipairs(gui:GetChildren()) do
+		if child.Name ~= "SettingsButton" and not child:IsA("LocalScript") and not child:IsA("Script") then
+			print("[SettingsUi DEBUG] Destroying:", child.Name, child.ClassName)
+			child:Destroy()
+		end
+	end
+	print("[SettingsUi DEBUG] Cleaned old UI elements")
 end
 gui.Enabled = true
 gui.IgnoreGuiInset = true
 gui.ResetOnSpawn = false
+gui.DisplayOrder = 10
 print("[SettingsUi DEBUG] ScreenGui configured - Enabled:", gui.Enabled)
 
 --========================================================
@@ -356,57 +370,49 @@ sub.Parent = header
 outlineText(sub)
 registerTextObject(sub)
 
--- Close (Icon Button) - TOP RIGHT (fixed border sizing)
-local closeHolder = Instance.new("Frame")
-closeHolder.Name = "CloseHolder"
-closeHolder.Size = UDim2.new(0, 56, 0, 44)
-closeHolder.Position = UDim2.new(1, -74, 0.5, -22)
-closeHolder.BackgroundTransparency = 1
-closeHolder.Parent = header
-corner(closeHolder, 14)
-
--- Border frame (stroke stays inside visually)
-local closeBorder = Instance.new("Frame")
-closeBorder.Name = "Border"
-closeBorder.Size = UDim2.fromScale(1, 1)
-closeBorder.BackgroundTransparency = 1
-closeBorder.Parent = closeHolder
-corner(closeBorder, 14)
-
-local borderStroke = Instance.new("UIStroke")
-borderStroke.Thickness = 2
-borderStroke.Color = BLACK
-borderStroke.Transparency = 0
-borderStroke.LineJoinMode = Enum.LineJoinMode.Round
-borderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border -- IMPORTANT: keeps it on the border
-borderStroke.Parent = closeBorder
-
--- Actual clickable image button (no stroke here!)
-local closeBtn = Instance.new("ImageButton")
+-- Close Button - TOP RIGHT - RED STYLE (directly on TextButton)
+local closeBtn = Instance.new("TextButton")
 closeBtn.Name = "CloseButton"
-closeBtn.Size = UDim2.fromScale(1, 1)
-closeBtn.BackgroundTransparency = 1
+closeBtn.Size = UDim2.new(0, 48, 0, 48)
+closeBtn.Position = UDim2.new(1, -66, 0.5, -24)
+closeBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+closeBtn.BackgroundTransparency = 0
 closeBtn.AutoButtonColor = false
-closeBtn.Image = ""
-closeBtn.ImageTransparency = 0
-closeBtn.ScaleType = Enum.ScaleType.Fit
-closeBtn.Parent = closeHolder
+closeBtn.Text = "X"
+closeBtn.Font = Enum.Font.GothamBlack
+closeBtn.TextScaled = true
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.TextStrokeTransparency = 0
+closeBtn.TextStrokeColor3 = Color3.fromRGB(80, 20, 20)
+closeBtn.Parent = header
+corner(closeBtn, 12)
 
--- Add padding so icon doesn't touch edges
-local iconPad = Instance.new("UIPadding")
-iconPad.PaddingLeft = UDim.new(0, 8)
-iconPad.PaddingRight = UDim.new(0, 8)
-iconPad.PaddingTop = UDim.new(0, 6)
-iconPad.PaddingBottom = UDim.new(0, 6)
-iconPad.Parent = closeBtn
+-- Padding so X occupies ~70% of the button
+local closePadding = Instance.new("UIPadding")
+closePadding.PaddingTop = UDim.new(0.15, 0)
+closePadding.PaddingBottom = UDim.new(0.15, 0)
+closePadding.PaddingLeft = UDim.new(0.15, 0)
+closePadding.PaddingRight = UDim.new(0.15, 0)
+closePadding.Parent = closeBtn
 
--- Hover/click animation + click sound
-applyButtonFX(closeBtn, 1.06, 0.92)
+-- UIStroke on the button
+local closeStroke = Instance.new("UIStroke")
+closeStroke.Thickness = 2.5
+closeStroke.Color = Color3.fromRGB(120, 30, 30)
+closeStroke.Transparency = 0
+closeStroke.LineJoinMode = Enum.LineJoinMode.Round
+closeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+closeStroke.Parent = closeBtn
 
-closeBtn.MouseButton1Click:Connect(function()
-	playClick()
-	closeUI()
+-- Simple hover effect
+closeBtn.MouseEnter:Connect(function()
+	TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(220, 70, 70)}):Play()
 end)
+closeBtn.MouseLeave:Connect(function()
+	TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(180, 50, 50)}):Play()
+end)
+
+-- NOTE: closeUI connection moved to after closeUI is defined
 
 
 --========================================================
@@ -722,81 +728,6 @@ do
 		y += 32
 	end
 end
-
---========================================================
--- GRAPHICS SECTION
---========================================================
-local _, graphicsCard = makeSectionBlock("GRAPHICS", 70)
-
-local function makeToggle(parent, xScale, labelText)
-	local holder = Instance.new("Frame")
-	holder.BackgroundTransparency = 1
-	holder.Position = UDim2.new(xScale, 0, 0, 0)
-	holder.Size = UDim2.new(0.5, 0, 1, 0)
-	holder.Parent = parent
-
-	local lbl = Instance.new("TextLabel")
-	lbl.BackgroundTransparency = 1
-	lbl.Position = UDim2.new(0, 16, 0, 12)
-	lbl.Size = UDim2.new(1, -120, 0, 20)
-	lbl.Font = Enum.Font.GothamBlack
-	lbl.TextSize = 18
-	lbl.TextColor3 = TEXT
-	lbl.TextXAlignment = Enum.TextXAlignment.Left
-	lbl.Text = labelText
-	lbl.Parent = holder
-	outlineText(lbl)
-	registerTextObject(lbl)
-
-	local toggle = Instance.new("TextButton")
-	toggle.BackgroundColor3 = Color3.fromRGB(28,28,38)
-	toggle.Size = UDim2.new(0, 64, 0, 28)
-	toggle.Position = UDim2.new(1, -80, 0.5, -14)
-	toggle.Text = ""
-	toggle.Parent = holder
-	corner(toggle, 99)
-	stroke(toggle, 2, 0)
-
-	local dot = Instance.new("Frame")
-	dot.BackgroundColor3 = CURRENT_ACCENT
-	dot.Size = UDim2.new(0, 22, 0, 22)
-	dot.Position = UDim2.new(0, 4, 0.5, -11)
-	dot.Parent = toggle
-	corner(dot, 99)
-	stroke(dot, 2, 0)
-
-	registerAccentFrame(dot)
-
-	return toggle, dot
-end
-
-local particlesToggle, particlesDot = makeToggle(graphicsCard, 0, "Particles")
-local shadowsToggle, shadowsDot = makeToggle(graphicsCard, 0.5, "Shadows")
-
-local function bindToggleSimple(btn, dot)
-	local on = true
-	local function render()
-		if on then
-			TweenService:Create(dot, TweenInfo.new(0.15), {Position = UDim2.new(1, -26, 0.5, -11)}):Play()
-			TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(18, 80, 92)}):Play()
-		else
-			TweenService:Create(dot, TweenInfo.new(0.15), {Position = UDim2.new(0, 4, 0.5, -11)}):Play()
-			TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(28,28,38)}):Play()
-		end
-	end
-
-	btn.MouseButton1Click:Connect(function()
-		playClick()
-		on = not on
-		render()
-	end)
-
-	render()
-	return function() return on end
-end
-
-local getParticles = bindToggleSimple(particlesToggle, particlesDot)
-local getShadows = bindToggleSimple(shadowsToggle, shadowsDot)
 
 --========================================================
 -- CONTROLS SECTION (UI Scale)
@@ -1140,7 +1071,10 @@ local function closeUI()
 	end)
 end
 
-closeBtn.MouseButton1Click:Connect(closeUI)
+closeBtn.MouseButton1Click:Connect(function()
+	playClick()
+	closeUI()
+end)
 
 if CLOSE_WITH_ESC then
 	UserInputService.InputBegan:Connect(function(input, gp)
