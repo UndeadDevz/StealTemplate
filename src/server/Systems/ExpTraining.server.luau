@@ -38,7 +38,7 @@ while true do
 					local zonaMult = zona:GetAttribute("ExpBase") or 1
 					
 					-- 3. Obtener Multiplicador de Rebirth
-					local rebirthMult = rebirths + 1
+					local rebirthMult = rebirths * 0.5 + 1
 					local speedMult = DataManager.GetStat(player, "Multiplier") or 1
 					
 					-- FÓRMULA FINAL: Base * Zona * Rebirth

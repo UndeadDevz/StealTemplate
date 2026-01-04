@@ -42,7 +42,7 @@ while true do
 						
 						-- 2. Obtener Multiplicador de Rebirth
 						local rebirths = DataManager.GetStat(player, "Rebirths") or 0
-						local rebirthMult = rebirths + 1
+					local rebirthMult = rebirths * 0.5 + 1
 						print(rebirthMult, baseExp, speedMult)
 						-- 3. Calcular Total
 						-- Fórmula: Base (Herramienta) * Rebirths
