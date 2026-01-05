@@ -22,12 +22,27 @@ local CollectionService = game:GetService("CollectionService")
 -- Configurar respawn rápido (3 segundos)
 Players.RespawnTime = 3
 
--- Acceder al tracking de checkpoints
-local CheckpointTracking = _G.CheckpointTracking
+-- Esperar a que CheckpointTracking esté disponible
+print("[DeathHandler] ⏳ Esperando a que CheckpointSystem esté listo...")
+local CheckpointTracking = nil
+local maxWaitTime = 10
+local waitedTime = 0
+
+while not CheckpointTracking and waitedTime < maxWaitTime do
+	CheckpointTracking = _G.CheckpointTracking
+	if not CheckpointTracking then
+		task.wait(0.5)
+		waitedTime = waitedTime + 0.5
+	end
+end
+
 if not CheckpointTracking then
-	warn("[DeathHandler] ⚠️ CheckpointTracking no encontrado. Asegúrate de que CheckpointSystem se ejecutó primero.")
+	warn("[DeathHandler] ❌ CheckpointTracking no encontrado después de", maxWaitTime, "segundos")
+	warn("[DeathHandler] ❌ Asegúrate de que CheckpointSystem.server.luau existe en src/server/Systems/")
 	return
 end
+
+print("[DeathHandler] ✅ CheckpointTracking encontrado")
 
 -- Esperar RemoteEvents
 local function esperarRemoteEvents()
