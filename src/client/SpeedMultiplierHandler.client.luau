@@ -30,6 +30,9 @@ local UPGRADES = {
 	{ mult = 4,  id = 3499832232, price = 9 },
 	{ mult = 8,  id = 3499832626, price = 19 },
 	{ mult = 16, id = 3499833065, price = 49 },
+	{ mult = 32, id = 3503035651, price = 89 },
+	{ mult = 64, id = 3503037417, price = 179 },
+	{ mult = 128, id = 3503036920, price = 289 },
 }
 
 local currentProductID = nil
@@ -59,7 +62,7 @@ local function UpdateUI()
 		currentProductID = nextUpgrade.id
 		button.Visible = true
 	else
-		-- Ya tiene el máximo (x16)
+		-- Ya tiene el máximo (x128)
 		button.Text = "MAXED"
 		speedLabel.Text = "MAXED"
 		priceLabel.Text = "MAXED"

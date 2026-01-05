@@ -18,7 +18,7 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- Configuración
-local BASE_SPEED = 16
+local BASE_SPEED = 1
 
 -- Esperar al RemoteEvent
 local remoteEventsFolder = ReplicatedStorage:WaitForChild("RemoteEvents")

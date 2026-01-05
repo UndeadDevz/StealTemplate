@@ -18,7 +18,7 @@ local PlayerStore = ProfileStore.New(GetStoreName(), Template)
 
 -- Calcula la velocidad del personaje basada en el nivel
 local function CalculateWalkSpeed(level: number)
-	return 16 + (level * 2)
+	return 1 + (level * 2)
 end
 
 -- Actualiza la velocidad del personaje respetando CustomSpeed
@@ -36,7 +36,7 @@ local function UpdateCharacterSpeed(player: Player, character, level: number)
 			if customSpeed == 0 or customSpeed > maxSpeed then
 				humanoid.WalkSpeed = maxSpeed
 			else
-				humanoid.WalkSpeed = math.clamp(customSpeed, 16, maxSpeed)
+				humanoid.WalkSpeed = math.clamp(customSpeed, 1, maxSpeed)
 			end
 		else
 			humanoid.WalkSpeed = maxSpeed

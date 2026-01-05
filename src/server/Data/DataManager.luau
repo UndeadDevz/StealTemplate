@@ -49,7 +49,7 @@ end
 
 -- Calcula la velocidad del personaje basada en el nivel
 local function CalculateWalkSpeed(level: number)
-	return 16 + (level * 2)
+	return 1 + (level * 2)
 end
 
 -- Calcula el nivel máximo según los rebirths (Hard cap at 375)
@@ -88,7 +88,7 @@ function DataManager.UpdateStat(player: Player, statName: string, newValue: any)
 			if customSpeed == 0 or customSpeed > maxSpeed then
 				humanoid.WalkSpeed = maxSpeed
 			else
-				humanoid.WalkSpeed = math.clamp(customSpeed, 16, maxSpeed)
+				humanoid.WalkSpeed = math.clamp(customSpeed, 1, maxSpeed)
 			end
 		end
 	end

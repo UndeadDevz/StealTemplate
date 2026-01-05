@@ -9,6 +9,9 @@ local PRODUCTOS = {
 	[3499832232] = { Type = "Multiplier", Value = 4 },
 	[3499832626] = { Type = "Multiplier", Value = 8 },
 	[3499833065] = { Type = "Multiplier", Value = 16 },
+	[3503035651] = { Type = "Multiplier", Value = 32 },
+	[3503037417] = { Type = "Multiplier", Value = 64 },
+	[3503036920] = { Type = "Multiplier", Value = 128 },
 
 	-- [[ PACKS DE EXPERIENCIA (Consumibles) ]] --
 	[3499890350] = { Type = "EXP", Value = 10000 },    -- 10k
