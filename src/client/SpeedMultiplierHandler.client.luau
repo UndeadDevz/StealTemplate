@@ -26,10 +26,10 @@ local getStat = remoteEvents:WaitForChild("GetStat")
 
 -- Configuración ordenada por niveles
 local UPGRADES = {
-	{ mult = 2,  id = 3499797343, price = 50 },
-	{ mult = 4,  id = 3499832232, price = 100 },
-	{ mult = 8,  id = 3499832626, price = 200 },
-	{ mult = 16, id = 3499833065, price = 400 },
+	{ mult = 2,  id = 3499797343, price = 5 },
+	{ mult = 4,  id = 3499832232, price = 9 },
+	{ mult = 8,  id = 3499832626, price = 19 },
+	{ mult = 16, id = 3499833065, price = 49 },
 }
 
 local currentProductID = nil
@@ -54,7 +54,7 @@ local function UpdateUI()
 	if nextUpgrade then
 		-- Mostrar botón de compra
 		button.Text = "x" .. nextUpgrade.mult .. " Speed"
-		priceLabel.Text = "Only " .. nextUpgrade.price
+		priceLabel.Text = "Only " .. utf8.char(0xE002) .. nextUpgrade.price
 		speedLabel.Text = "x" .. nextUpgrade.mult .. " Speed"
 		currentProductID = nextUpgrade.id
 		button.Visible = true

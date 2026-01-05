@@ -1209,8 +1209,8 @@ applyBtn.MouseButton1Click:Connect(function()
 
 	local soundValue = getSound()
 	local musicValue = getMusic()
-	local particlesOn = getParticles()
-	local shadowsOn = getShadows()
+	-- local particlesOn = getParticles() -- ⚠️ Function doesn't exist, commented out
+	-- local shadowsOn = getShadows() -- ⚠️ Function doesn't exist, commented out
 
 	local themeColor = themeColorBtn.Text
 	local fontName = fontBtn.Text
@@ -1245,8 +1245,8 @@ applyBtn.MouseButton1Click:Connect(function()
 	print("[SettingsUi] Apply:",
 		"Sound=", soundValue,
 		"Music=", musicValue,
-		"Particles=", particlesOn,
-		"Shadows=", shadowsOn,
+		-- "Particles=", particlesOn, -- ⚠️ Commented out (function doesn't exist)
+		-- "Shadows=", shadowsOn, -- ⚠️ Commented out (function doesn't exist)
 		"UI Scale=", uiScaleMode,
 		"ThemeColor=", themeColor,
 		"Font=", fontName,
