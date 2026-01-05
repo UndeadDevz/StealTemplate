@@ -70,3 +70,31 @@ end
 getStat.OnServerInvoke = function(player, statName)
 	return DataManager.GetStat(player, statName)
 end
+
+-- Crea el RemoteFunction para obtener settings
+local getSettings = remoteEventsFolder:FindFirstChild("GetSettings")
+if not getSettings then
+	getSettings = Instance.new("RemoteFunction")
+	getSettings.Name = "GetSettings"
+	getSettings.Parent = remoteEventsFolder
+	print("✅ RemoteFunction 'GetSettings' creado")
+end
+
+-- Handler para GetSettings
+getSettings.OnServerInvoke = function(player)
+	return DataManager.GetSettings(player)
+end
+
+-- Crea el RemoteEvent para actualizar settings
+local updateSettings = remoteEventsFolder:FindFirstChild("UpdateSettings")
+if not updateSettings then
+	updateSettings = Instance.new("RemoteEvent")
+	updateSettings.Name = "UpdateSettings"
+	updateSettings.Parent = remoteEventsFolder
+	print("✅ RemoteEvent 'UpdateSettings' creado")
+end
+
+-- Handler para UpdateSettings
+updateSettings.OnServerEvent:Connect(function(player, settings)
+	DataManager.UpdateSettings(player, settings)
+end)

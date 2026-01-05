@@ -162,4 +162,30 @@ function DataManager.CheckLevelUp(player: Player): number
 	return levelsGained
 end
 
+-- Obtiene las configuraciones del jugador
+function DataManager.GetSettings(player: Player)
+	local profile = DataManager.Profiles[player]
+	if not profile then
+		return nil
+	end
+	return profile.Data.Settings
+end
+
+-- Actualiza las configuraciones del jugador
+function DataManager.UpdateSettings(player: Player, settings: {[string]: any})
+	local profile = DataManager.Profiles[player]
+	if not profile then
+		return false
+	end
+
+	-- Actualizar cada configuración
+	for key, value in pairs(settings) do
+		if profile.Data.Settings[key] ~= nil then
+			profile.Data.Settings[key] = value
+		end
+	end
+
+	return true
+end
+
 return DataManager

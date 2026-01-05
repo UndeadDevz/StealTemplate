@@ -38,6 +38,7 @@ local TweenService = game:GetService("TweenService")
 local GuiService = game:GetService("GuiService")
 local UserInputService = game:GetService("UserInputService")
 local SoundService = game:GetService("SoundService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local plr = Players.LocalPlayer
 local playerGui = plr:WaitForChild("PlayerGui")
@@ -641,13 +642,26 @@ local function bindSlider(bar, fill, knob, onChangeCallback)
 		end
 	end)
 
-	return function()
+	-- Setter function that sets the value directly (0-1)
+	local function setValue(alpha)
+		alpha = math.clamp(alpha, 0, 1)
+		fill.Size = UDim2.new(alpha, 0, 1, 0)
+		knob.Position = UDim2.new(alpha, -9, 0.5, -9)
+		if onChangeCallback then
+			onChangeCallback(alpha)
+		end
+	end
+
+	-- Getter function
+	local function getValue()
 		return fill.Size.X.Scale
 	end
+
+	return getValue, setValue
 end
 
-local getSound = bindSlider(soundBar, soundFill, soundKnob, applySoundVolume)
-local getMusic = bindSlider(musicBar, musicFill, musicKnob, applyMusicVolume)
+local getSound, setSound = bindSlider(soundBar, soundFill, soundKnob, applySoundVolume)
+local getMusic, setMusic = bindSlider(musicBar, musicFill, musicKnob, applyMusicVolume)
 
 --========================================================
 -- AUDIO FILTERS (Players can choose what to mute)
@@ -1222,6 +1236,24 @@ applyBtn.MouseButton1Click:Connect(function()
 		audioFilterStates[i] = filterGetters[i] and filterGetters[i]() or false
 	end
 
+	-- GUARDAR SETTINGS EN EL SERVIDOR
+	local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents", 5)
+	if remoteEvents then
+		local updateSettings = remoteEvents:FindFirstChild("UpdateSettings")
+		if updateSettings then
+			local settingsData = {
+				Sound = soundValue,
+				Music = musicValue,
+				UIScale = uiScaleMode,
+				ThemeColor = themeColor,
+				FontName = fontName,
+				FontWeight = fontWeight,
+				AudioFilters = audioFilterStates
+			}
+			updateSettings:FireServer(settingsData)
+		end
+	end
+
 	-- CONNECT AUDIO (buyer playground)
 	setSoundGroupMuted("SFX", false, soundValue)
 	setSoundGroupMuted("Music", false, musicValue)
@@ -1254,6 +1286,67 @@ applyBtn.MouseButton1Click:Connect(function()
 	)
 
 	flash("Settings applied.", GOODTXT)
+end)
+
+--========================================================
+-- CARGAR SETTINGS GUARDADAS
+--========================================================
+task.spawn(function()
+	local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents", 10)
+	if not remoteEvents then
+		return
+	end
+
+	local getSettings = remoteEvents:WaitForChild("GetSettings", 10)
+	if not getSettings then
+		return
+	end
+
+	-- Esperar a que el perfil esté cargado
+	task.wait(2)
+
+	local success, result = pcall(function()
+		return getSettings:InvokeServer()
+	end)
+
+	if success and result then
+		-- Aplicar volúmenes
+		if result.Sound then
+			setSound(result.Sound)
+		end
+		if result.Music then
+			setMusic(result.Music)
+		end
+
+		-- Aplicar UI Scale
+		if result.UIScale then
+			uiScaleBtn.Text = result.UIScale
+			applyUiScaleMode(result.UIScale)
+		end
+
+		-- Aplicar Theme Color
+		if result.ThemeColor then
+			themeColorBtn.Text = result.ThemeColor
+			applyThemeColor(result.ThemeColor)
+		end
+
+		-- Aplicar Font
+		if result.FontName and result.FontWeight then
+			fontBtn.Text = result.FontName
+			weightBtn.Text = result.FontWeight
+			applyFontToAll(result.FontName, result.FontWeight)
+		end
+
+		-- Aplicar Audio Filters
+		if result.AudioFilters then
+			for i, state in pairs(result.AudioFilters) do
+				if filterSetters[i] then
+					filterSetters[i](state)
+					audioFilterStates[i] = state
+				end
+			end
+		end
+	end
 end)
 
 --========================================================
