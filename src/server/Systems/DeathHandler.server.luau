@@ -1,171 +1,125 @@
 --[[
-	═══════════════════════════════════════════════════════════════════════
-	DEATH HANDLER SYSTEM
-	═══════════════════════════════════════════════════════════════════════
-
-	Maneja la muerte del jugador y el sistema de teleport a checkpoints.
-
-	FLUJO:
-	1. Jugador muere → Humanoid.Died
-	2. Verifica si tiene checkpoint guardado
-	3. Si SÍ tiene checkpoint: espera 3s y muestra popup
-	4. Si NO tiene checkpoint: solo respawn normal
-	5. Si compra teleport: valida y teleporta al checkpoint
-
-	═══════════════════════════════════════════════════════════════════════
+	DEATH HANDLER - Sistema simple de muerte y checkpoint
+	Muestra el botón cuando el jugador muere si tiene checkpoint guardado
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CollectionService = game:GetService("CollectionService")
 
 -- Configurar respawn rápido (3 segundos)
 Players.RespawnTime = 3
 
--- Esperar a que CheckpointTracking esté disponible
-print("[DeathHandler] ⏳ Esperando a que CheckpointSystem esté listo...")
+-- Esperar CheckpointTracking
+print("[DeathHandler] Esperando CheckpointTracking...")
 local CheckpointTracking = nil
-local maxWaitTime = 10
-local waitedTime = 0
-
-while not CheckpointTracking and waitedTime < maxWaitTime do
+for i = 1, 20 do
 	CheckpointTracking = _G.CheckpointTracking
-	if not CheckpointTracking then
-		task.wait(0.5)
-		waitedTime = waitedTime + 0.5
-	end
+	if CheckpointTracking then break end
+	task.wait(0.5)
 end
 
 if not CheckpointTracking then
-	warn("[DeathHandler] ❌ CheckpointTracking no encontrado después de", maxWaitTime, "segundos")
-	warn("[DeathHandler] ❌ Asegúrate de que CheckpointSystem.server.luau existe en src/server/Systems/")
+	warn("[DeathHandler] ❌ No se encontró CheckpointTracking")
 	return
 end
 
 print("[DeathHandler] ✅ CheckpointTracking encontrado")
 
 -- Esperar RemoteEvents
-local function esperarRemoteEvents()
-	local remoteEventsFolder = ReplicatedStorage:WaitForChild("RemoteEvents", 10)
-	if not remoteEventsFolder then
-		warn("[DeathHandler] ⚠️ RemoteEvents folder no encontrado")
-		return nil
-	end
-
-	local showDeathPopupEvent = remoteEventsFolder:WaitForChild("ShowDeathPopup", 10)
-	local teleportToCheckpointEvent = remoteEventsFolder:WaitForChild("TeleportToCheckpoint", 10)
-
-	if not showDeathPopupEvent or not teleportToCheckpointEvent then
-		warn("[DeathHandler] ⚠️ RemoteEvents no encontrados")
-		return nil
-	end
-
-	return showDeathPopupEvent, teleportToCheckpointEvent
-end
-
-local showDeathPopupEvent, teleportToCheckpointEvent = esperarRemoteEvents()
-if not showDeathPopupEvent or not teleportToCheckpointEvent then
+local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents", 10)
+if not remoteEvents then
+	warn("[DeathHandler] ❌ No se encontró RemoteEvents")
 	return
 end
 
--- ═══════════════════════════════════════════════════════════════════════
--- MANEJAR MUERTE DEL JUGADOR
--- ═══════════════════════════════════════════════════════════════════════
-local function OnCharacterAdded(player, character)
-	local humanoid = character:WaitForChild("Humanoid")
+local showEvent = remoteEvents:WaitForChild("ShowDeathPopup", 10)
+local teleportEvent = remoteEvents:WaitForChild("TeleportToCheckpoint", 10)
 
-	humanoid.Died:Connect(function()
-		print("💀 Jugador murió:", player.Name)
+if not showEvent or not teleportEvent then
+	warn("[DeathHandler] ❌ No se encontraron los RemoteEvents")
+	return
+end
 
-		-- Verificar si tiene checkpoint guardado
-		local checkpointData = CheckpointTracking[player]
+print("[DeathHandler] ✅ RemoteEvents encontrados")
 
-		if not checkpointData then
-			print("ℹ️  No hay checkpoint guardado para:", player.Name, "- Solo respawn normal")
-			return
-		end
+-- Función para conectar a un jugador
+local function setupPlayer(player)
+	print("[DeathHandler] 🔧 Configurando jugador:", player.Name)
 
-		-- Tiene checkpoint - mostrar popup después del respawn
-		task.spawn(function()
-			-- Esperar 3 segundos (tiempo de respawn automático)
-			task.wait(3)
+	-- Función para conectar a un personaje
+	local function setupCharacter(character)
+		print("[DeathHandler] 👤 Configurando personaje para:", player.Name)
+		local humanoid = character:WaitForChild("Humanoid")
 
-			-- Verificar que el jugador aún está conectado
-			if not player or not player.Parent then
+		print("[DeathHandler] ❤️ Conectando evento Died para:", player.Name)
+		humanoid.Died:Connect(function()
+			print("💀", player.Name, "murió")
+
+			-- Verificar si tiene checkpoint
+			local checkpoint = CheckpointTracking[player]
+			if not checkpoint then
+				print("ℹ️", player.Name, "no tiene checkpoint guardado")
 				return
 			end
 
-			print("📢 Mostrando popup de checkpoint para:", player.Name)
+			print("✅", player.Name, "tiene checkpoint:", checkpoint.CheckpointName)
 
-			-- Enviar info del checkpoint al cliente
-			showDeathPopupEvent:FireClient(player, checkpointData)
+			-- Esperar a que respawnee (3 segundos)
+			task.wait(3.1)
+
+			-- Verificar que sigue conectado
+			if not player or not player.Parent then
+				print("⚠️", player.Name, "se desconectó")
+				return
+			end
+
+			-- Mostrar botón
+			print("📢 ENVIANDO EVENTO para mostrar botón a", player.Name)
+			showEvent:FireClient(player, checkpoint)
 		end)
-	end)
+	end
+
+	-- Conectar a CharacterAdded
+	player.CharacterAdded:Connect(setupCharacter)
+
+	-- Si ya tiene personaje, configurarlo
+	if player.Character then
+		setupCharacter(player.Character)
+	end
 end
 
--- Conectar a jugadores
-Players.PlayerAdded:Connect(function(player)
-	player.CharacterAdded:Connect(function(character)
-		OnCharacterAdded(player, character)
-	end)
+-- Conectar jugadores nuevos
+Players.PlayerAdded:Connect(setupPlayer)
 
-	-- Si ya tiene personaje
-	if player.Character then
-		OnCharacterAdded(player, player.Character)
-	end
-end)
+-- Conectar jugadores que ya estén en el juego
+for _, player in pairs(Players:GetPlayers()) do
+	setupPlayer(player)
+end
 
--- ═══════════════════════════════════════════════════════════════════════
--- HANDLER: TELEPORT A CHECKPOINT (después de compra)
--- ═══════════════════════════════════════════════════════════════════════
-teleportToCheckpointEvent.OnServerEvent:Connect(function(player)
-	print("🌀 Teleport request de:", player.Name)
+-- Handler de teleport
+teleportEvent.OnServerEvent:Connect(function(player)
+	print("🌀 Teleport solicitado por", player.Name)
 
-	local checkpointData = CheckpointTracking[player]
-
-	if not checkpointData then
-		warn("⚠️  No hay checkpoint para", player.Name)
+	local checkpoint = CheckpointTracking[player]
+	if not checkpoint then
+		warn("⚠️ No hay checkpoint para", player.Name)
 		return
 	end
 
-	-- Validar que el checkpoint aún existe
-	local checkpointExists = false
-	for _, parte in CollectionService:GetTagged("Checkpoint") do
-		if parte:GetAttribute("CheckpointName") == checkpointData.CheckpointName then
-			checkpointExists = true
-			break
-		end
-	end
-
-	if not checkpointExists then
-		warn("⚠️  Checkpoint eliminado:", checkpointData.CheckpointName)
-		-- TODO: Opcional - enviar mensaje de error al cliente
-		return
-	end
-
-	-- Verificar que el jugador está vivo
 	local character = player.Character
 	if not character then
-		warn("⚠️  Jugador no tiene personaje:", player.Name)
-		return
-	end
-
-	local humanoid = character:FindFirstChild("Humanoid")
-	if not humanoid or humanoid.Health <= 0 then
-		warn("⚠️  Jugador está muerto, no se puede teleportar:", player.Name)
+		warn("⚠️", player.Name, "no tiene personaje")
 		return
 	end
 
 	local rootPart = character:FindFirstChild("HumanoidRootPart")
 	if not rootPart then
-		warn("⚠️  No se encontró HumanoidRootPart para:", player.Name)
+		warn("⚠️", player.Name, "no tiene HumanoidRootPart")
 		return
 	end
 
-	print("💎 Teleportando a checkpoint:", player.Name, "->", checkpointData.CheckpointName)
-
-	-- Teleportar con offset +5 en Y (evitar quedar atascado)
-	rootPart.CFrame = CFrame.new(checkpointData.Position + Vector3.new(0, 5, 0))
+	print("💎 Teleportando", player.Name, "a", checkpoint.CheckpointName)
+	rootPart.CFrame = CFrame.new(checkpoint.Position + Vector3.new(0, 5, 0))
 end)
 
-print("[DeathHandler] ✅ Sistema activado (RespawnTime = 3s)")
+print("[DeathHandler] ✅ Sistema activado")

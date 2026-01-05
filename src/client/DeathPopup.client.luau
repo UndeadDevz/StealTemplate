@@ -51,46 +51,13 @@ print("✅ [CheckpointButton] Botón encontrado y configurado")
 -- LÓGICA DEL BOTÓN
 -- ═══════════════════════════════════════════════════════════════════════
 
-local buttonVisible = false
-local autoHideCoroutine = nil
-
--- Ocultar botón
-local function hideButton()
-	if not buttonVisible then return end
-
-	buttonVisible = false
-	checkpointButton.Visible = false
-
-	-- Cancelar auto-hide si está corriendo
-	if autoHideCoroutine then
-		task.cancel(autoHideCoroutine)
-		autoHideCoroutine = nil
-	end
-
-	print("🔒 [CheckpointButton] Botón ocultado")
-end
--- Mostrar botón
 local function showButton(checkpointData)
-	if buttonVisible then
-		-- Ya hay un botón visible, ocultarlo primero
-		hideButton()
-	end
-
-	buttonVisible = true
+	print("✅ Mostrando botón")
 	checkpointButton.Visible = true
 
-	print("✅ [CheckpointButton] Botón mostrado para checkpoint:", checkpointData.CheckpointName)
-
-	-- Iniciar timer de auto-ocultar (6 segundos)
-	if autoHideCoroutine then
-		task.cancel(autoHideCoroutine)
-	end
-
-	autoHideCoroutine = task.spawn(function()
-		task.wait(BUTTON_DURATION)
-		if buttonVisible then
-			hideButton()
-		end
+	task.delay(6, function()
+		print("⏰ Ocultando botón después de 6 segundos")
+		checkpointButton.Visible = false
 	end)
 end
 
@@ -101,19 +68,9 @@ end
 -- ═══════════════════════════════════════════════════════════════════════
 
 checkpointButton.MouseButton1Click:Connect(function()
-	print("🖱️ [CheckpointButton] Click detectado")
-
-	-- Abrir prompt de compra de Robux
-	local success, err = pcall(function()
-		MarketplaceService:PromptProductPurchase(player, CHECKPOINT_PRODUCT_ID)
-	end)
-
-	if not success then
-		warn("❌ Error al abrir prompt de compra:", err)
-	end
-
-	-- Ocultar botón (el teleport ocurrirá después de la compra)
-	hideButton()
+	print("🖱️ Click en botón")
+	MarketplaceService:PromptProductPurchase(player, CHECKPOINT_PRODUCT_ID)
+	checkpointButton.Visible = false
 end)
 
 -- ═══════════════════════════════════════════════════════════════════════
@@ -133,11 +90,9 @@ end)
 
 -- Evento: Teleport activado (después de compra exitosa)
 teleportToCheckpointEvent.OnClientEvent:Connect(function()
-	print("✅ [CheckpointButton] Compra exitosa, teleportando...")
-	-- Comunicar al servidor para ejecutar el teleport
+	print("✅ Compra exitosa, teleportando")
 	teleportToCheckpointEvent:FireServer()
-	-- Ocultar botón
-	hideButton()
+	checkpointButton.Visible = false
 end)
 
 print("[CheckpointButton] ✅ Sistema inicializado")
