@@ -16,6 +16,5 @@ return {
 		ThemeColor = "Cyan", -- Color del tema
 		FontName = "GothamBlack", -- Nombre de la fuente
 		FontWeight = "Black", -- Peso de la fuente
-		AudioFilters = {}, -- Estados de filtros de audio (array de booleans)
 	}
 }

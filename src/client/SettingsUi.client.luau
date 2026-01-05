@@ -30,7 +30,6 @@
 --   • Change open button name: OPEN_BUTTON_NAME
 --   • Mobile size: MOBILE_SCALE_PADDING / MIN_SCALE
 --   • Enable/disable ESC close: CLOSE_WITH_ESC
---   • Audio targets (what players can mute): AUDIO_TARGETS
 --========================================================
 
 local Players = game:GetService("Players")
@@ -99,20 +98,6 @@ local DEFAULT_FONT_WEIGHT = "Regular"     -- Demo label only (Roblox legacy font
 -- Click sound (plays on every click)
 local CLICK_SOUND_ID = "rbxassetid://95635059379804"
 local CLICK_VOLUME = 0.8
-
---========================================================
--- AUDIO TARGETS (BUYER CUSTOMIZATION)
---========================================================
--- Players can toggle these to mute certain audio categories.
--- Recommended: use SoundGroups named "Music", "SFX", "Ambience" under SoundService.
-local AUDIO_TARGETS = {
-	{Label = "Mute Music",    Type = "SoundGroup", Name = "Music"},
-	{Label = "Mute SFX",      Type = "SoundGroup", Name = "SFX"},
-	{Label = "Mute Ambience", Type = "SoundGroup", Name = "Ambience"},
-
-	-- Optional: target individual Sounds by Name
-	-- {Label = "Mute Menu Music", Type = "SoundName", Name = "MenuMusic"},
-}
 
 --========================================================
 -- THEME COLORS (Dark-Tech)
@@ -664,86 +649,6 @@ local getSound, setSound = bindSlider(soundBar, soundFill, soundKnob, applySound
 local getMusic, setMusic = bindSlider(musicBar, musicFill, musicKnob, applyMusicVolume)
 
 --========================================================
--- AUDIO FILTERS (Players can choose what to mute)
---========================================================
-local _, filtersCard = makeSectionBlock("AUDIO FILTERS", math.max(70, (#AUDIO_TARGETS * 32) + 18))
-local audioFilterStates = {}
-
-local function makeToggleRow(parent, y, labelText)
-	local lbl = Instance.new("TextLabel")
-	lbl.BackgroundTransparency = 1
-	lbl.Position = UDim2.new(0, 16, 0, y)
-	lbl.Size = UDim2.new(1, -120, 0, 22)
-	lbl.Font = Enum.Font.GothamBlack
-	lbl.TextSize = 16
-	lbl.TextColor3 = TEXT
-	lbl.TextXAlignment = Enum.TextXAlignment.Left
-	lbl.Text = labelText
-	lbl.Parent = parent
-	outlineText(lbl)
-	registerTextObject(lbl)
-
-	local toggle = Instance.new("TextButton")
-	toggle.BackgroundColor3 = Color3.fromRGB(28,28,38)
-	toggle.Size = UDim2.new(0, 64, 0, 26)
-	toggle.Position = UDim2.new(1, -80, 0, y - 2)
-	toggle.Text = ""
-	toggle.Parent = parent
-	corner(toggle, 99)
-	stroke(toggle, 2, 0)
-
-	local dot = Instance.new("Frame")
-	dot.BackgroundColor3 = CURRENT_ACCENT
-	dot.Size = UDim2.new(0, 20, 0, 20)
-	dot.Position = UDim2.new(0, 4, 0.5, -10)
-	dot.Parent = toggle
-	corner(dot, 99)
-	stroke(dot, 2, 0)
-
-	registerAccentFrame(dot)
-
-	return toggle, dot
-end
-
-local function bindToggle(btn, dot, defaultOn)
-	local on = defaultOn and true or false
-
-	local function render()
-		if on then
-			TweenService:Create(dot, TweenInfo.new(0.15), {Position = UDim2.new(1, -24, 0.5, -10)}):Play()
-			TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(18, 80, 92)}):Play()
-		else
-			TweenService:Create(dot, TweenInfo.new(0.15), {Position = UDim2.new(0, 4, 0.5, -10)}):Play()
-			TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(28,28,38)}):Play()
-		end
-	end
-
-	btn.MouseButton1Click:Connect(function()
-		playClick()
-		on = not on
-		render()
-	end)
-
-	render()
-	return function() return on end, function(v) on = v; render() end
-end
-
-local filterGetters = {}
-local filterSetters = {}
-
-do
-	local y = 10
-	for i, t in ipairs(AUDIO_TARGETS) do
-		local btn, dot = makeToggleRow(filtersCard, y, t.Label)
-		local get, set = bindToggle(btn, dot, false)
-		filterGetters[i] = get
-		filterSetters[i] = set
-		audioFilterStates[i] = false
-		y += 32
-	end
-end
-
---========================================================
 -- CONTROLS SECTION (UI Scale)
 --========================================================
 local _, controlsCard = makeSectionBlock("CONTROLS", 70)
@@ -1192,14 +1097,6 @@ resetBtn.MouseButton1Click:Connect(function()
 	musicFill.Size = UDim2.new(0.65, 0, 1, 0)
 	musicKnob.Position = UDim2.new(0.65, -9, 0.5, -9)
 
-	-- Reset audio filters (all OFF)
-	for i = 1, #AUDIO_TARGETS do
-		audioFilterStates[i] = false
-		if filterSetters[i] then
-			filterSetters[i](false)
-		end
-	end
-
 	-- Reset theme + font
 	themeIndex, fontIndex, weightIndex = 1, 1, 1
 	themeColorBtn.Text = themeColors[themeIndex]
@@ -1231,11 +1128,6 @@ applyBtn.MouseButton1Click:Connect(function()
 	local fontWeight = weightBtn.Text
 	local uiScaleMode = uiScaleBtn.Text
 
-	-- Read audio filter toggles
-	for i = 1, #AUDIO_TARGETS do
-		audioFilterStates[i] = filterGetters[i] and filterGetters[i]() or false
-	end
-
 	-- GUARDAR SETTINGS EN EL SERVIDOR
 	local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents", 5)
 	if remoteEvents then
@@ -1247,8 +1139,7 @@ applyBtn.MouseButton1Click:Connect(function()
 				UIScale = uiScaleMode,
 				ThemeColor = themeColor,
 				FontName = fontName,
-				FontWeight = fontWeight,
-				AudioFilters = audioFilterStates
+				FontWeight = fontWeight
 			}
 			updateSettings:FireServer(settingsData)
 		end
@@ -1257,16 +1148,6 @@ applyBtn.MouseButton1Click:Connect(function()
 	-- CONNECT AUDIO (buyer playground)
 	setSoundGroupMuted("SFX", false, soundValue)
 	setSoundGroupMuted("Music", false, musicValue)
-
-	for i, t in ipairs(AUDIO_TARGETS) do
-		local muted = audioFilterStates[i]
-		if t.Type == "SoundGroup" then
-			local baseVol = (t.Name == "Music") and musicValue or soundValue
-			setSoundGroupMuted(t.Name, muted, baseVol)
-		elseif t.Type == "SoundName" then
-			setSoundsByNameMuted(t.Name, muted, musicValue)
-		end
-	end
 
 	-- Theme is already live, but apply once more for safety
 	applyThemeColor(themeColor)
@@ -1335,16 +1216,6 @@ task.spawn(function()
 			fontBtn.Text = result.FontName
 			weightBtn.Text = result.FontWeight
 			applyFontToAll(result.FontName, result.FontWeight)
-		end
-
-		-- Aplicar Audio Filters
-		if result.AudioFilters then
-			for i, state in pairs(result.AudioFilters) do
-				if filterSetters[i] then
-					filterSetters[i](state)
-					audioFilterStates[i] = state
-				end
-			end
 		end
 	end
 end)
