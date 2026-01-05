@@ -14,6 +14,9 @@ local PRODUCTOS = {
 	[3499890350] = { Type = "EXP", Value = 10000 },    -- 10k
 	[3499900596] = { Type = "EXP", Value = 100000 },   -- 100k
 	[3499900814] = { Type = "EXP", Value = 1000000 },  -- 1M
+
+	-- [[ CHECKPOINT TELEPORT (Consumible) ]] --
+	[3502953308] = { Type = "CheckpointTeleport", Value = 1 },  -- ⚠️ REEMPLAZAR 0 CON PRODUCT ID REAL
 }
 
 local function ProcessReceipt(receiptInfo)
@@ -40,15 +43,27 @@ local function ProcessReceipt(receiptInfo)
 		elseif data.Type == "EXP" then
 			-- 1. Sumar la EXP
 			DataManager.AddStat(player, "EXP", data.Value)
-			
+
 			-- 2. Verificar si sube de nivel inmediatamente
 			DataManager.CheckLevelUp(player)
-			
+
 			print("✅ Pack comprado: +" .. data.Value .. " EXP")
+			return Enum.ProductPurchaseDecision.PurchaseGranted
+
+		-- LOGICA PARA CHECKPOINT TELEPORT
+		elseif data.Type == "CheckpointTeleport" then
+			print("💎 Checkpoint Teleport comprado por:", player.Name)
+
+			-- Disparar evento para teleport al checkpoint
+			local ReplicatedStorage = game:GetService("ReplicatedStorage")
+			local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
+			local teleportEvent = remoteEvents:WaitForChild("TeleportToCheckpoint")
+			teleportEvent:FireClient(player)
+
 			return Enum.ProductPurchaseDecision.PurchaseGranted
 		end
 	end
-	
+
 	return Enum.ProductPurchaseDecision.NotProcessedYet
 end
 

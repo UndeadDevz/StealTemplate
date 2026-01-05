@@ -37,6 +37,24 @@ if not setCustomSpeed then
 	print("✅ RemoteEvent 'SetCustomSpeed' creado")
 end
 
+-- Crea el RemoteEvent para mostrar popup de muerte
+local showDeathPopup = remoteEventsFolder:FindFirstChild("ShowDeathPopup")
+if not showDeathPopup then
+	showDeathPopup = Instance.new("RemoteEvent")
+	showDeathPopup.Name = "ShowDeathPopup"
+	showDeathPopup.Parent = remoteEventsFolder
+	print("✅ RemoteEvent 'ShowDeathPopup' creado")
+end
+
+-- Crea el RemoteEvent para teleport a checkpoint
+local teleportToCheckpoint = remoteEventsFolder:FindFirstChild("TeleportToCheckpoint")
+if not teleportToCheckpoint then
+	teleportToCheckpoint = Instance.new("RemoteEvent")
+	teleportToCheckpoint.Name = "TeleportToCheckpoint"
+	teleportToCheckpoint.Parent = remoteEventsFolder
+	print("✅ RemoteEvent 'TeleportToCheckpoint' creado")
+end
+
 -- Crea el RemoteFunction para obtener stats
 local DataManager = require(script.Parent.DataManager)
 

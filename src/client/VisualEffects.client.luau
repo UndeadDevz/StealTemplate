@@ -22,7 +22,6 @@ local WINGS_ICON_ID = "rbxassetid://130057163043800" -- O prueba 13418296060
 
 local function SpawnWings()
 	-- 1. Crear la imagen
-	print('🕊️ SpawnWings activado')
 	local icon = Instance.new("ImageLabel")
 	icon.Name = "ExpWings"
 	icon.Image = WINGS_ICON_ID
