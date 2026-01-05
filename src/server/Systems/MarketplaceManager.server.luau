@@ -21,6 +21,12 @@ local PRODUCTOS = {
 
 	-- [[ CHECKPOINT TELEPORT (Consumible) ]] --
 	[3502953308] = { Type = "CheckpointTeleport", Value = 1 },  -- ⚠️ REEMPLAZAR 0 CON PRODUCT ID REAL
+
+	-- [[ PISTAS DESBLOQUEABLES ]] --
+	[3503497564] = { Type = "Track", Value = 3 },  -- Zona x3
+	[3503499104] = { Type = "Track", Value = 5 },  -- Zona x5
+	[3503499344] = { Type = "Track", Value = 9 },  -- Zona x9
+	[3503499623] = { Type = "Track", Value = 25 }, -- Zona x25
 }
 
 local function ProcessReceipt(receiptInfo)
@@ -65,7 +71,13 @@ local function ProcessReceipt(receiptInfo)
 			teleportEvent:FireClient(player)
 
 			return Enum.ProductPurchaseDecision.PurchaseGranted
+		-- LOGICA PARA PISTAS DESBLOQUEABLES
+			elseif data.Type == "Track" then
+			DataManager.UnlockTrack(player, data.Value)
+			print("✅ Zona x" .. data.Value .. " comprada permanentemente.")
+			return Enum.ProductPurchaseDecision.PurchaseGranted
 		end
+		
 	end
 
 	return Enum.ProductPurchaseDecision.NotProcessedYet

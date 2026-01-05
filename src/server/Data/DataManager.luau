@@ -188,4 +188,28 @@ function DataManager.UpdateSettings(player: Player, settings: {[string]: any})
 	return true
 end
 
+function DataManager.UnlockTrack(player: Player, trackValue: number)
+	local profile = DataManager.Profiles[player]
+	if not profile then return end
+	
+	-- Asegurarse de que la tabla Tracks existe
+	if not profile.Data.Tracks then
+		profile.Data.Tracks = {}
+	end
+
+	-- Verificar si ya la tiene para no duplicar
+	local alreadyHas = false
+	for _, v in pairs(profile.Data.Tracks) do
+		if v == trackValue then
+			alreadyHas = true
+			break
+		end
+	end
+
+	if not alreadyHas then
+		table.insert(profile.Data.Tracks, trackValue)
+		print("🔓 " .. player.Name .. " desbloqueó la zona x" .. trackValue)
+	end
+end
+
 return DataManager
