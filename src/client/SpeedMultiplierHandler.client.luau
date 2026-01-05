@@ -33,6 +33,7 @@ local UPGRADES = {
 	{ mult = 32, id = 3503035651, price = 89 },
 	{ mult = 64, id = 3503037417, price = 179 },
 	{ mult = 128, id = 3503036920, price = 289 },
+	{ mult = 256, id = 3503044526, price = 599 },
 }
 
 local currentProductID = nil
