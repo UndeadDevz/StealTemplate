@@ -15,6 +15,9 @@ local NOMBRE_COCHE = "CocheMesh"
 local ANGULO_GIRO_VOLANTE = 45
 local VELOCIDAD_GIRO = 10
 
+-- Altura del auto (ajusta este valor para subir o bajar el coche)
+local ALTURA_AUTO = 0.2 -- Aumenta para subir, disminuye para bajar
+
 -- Animaciones
 local ANIM_IDLE = "rbxassetid://72471066577154"
 local ANIM_LEFT = "rbxassetid://136541988317425"
@@ -26,12 +29,11 @@ local VELOCIDAD_INCLINACION = 8
 local PITCH_MAXIMO = math.rad(35)
 
 -- Configuración de ruedas
-local ANGULO_GIRO_RUEDAS = 30 -- Ángulo máximo de giro de ruedas delanteras
 local RADIO_RUEDA = 1 -- Radio de las ruedas (ajustar según tu modelo)
 -- ===================================
 
 -- Calcular offset de altura una sola vez
-local offsetY = -humanoid.HipHeight + (lowerTorso.Size.Y / 2)
+local offsetY = -humanoid.HipHeight + (lowerTorso.Size.Y / 2) + ALTURA_AUTO
 
 -- ========== OCULTAR PERSONAJE REAL ==========
 local function ocultarPersonajeReal()
@@ -69,9 +71,24 @@ if not auto then
 	return
 end
 
-local carroceria = auto:FindFirstChild("Carroceria")
+-- Buscar el Body que contiene el MeshPart principal
+local bodyModel = auto:FindFirstChild("Body")
+if not bodyModel then
+	warn("[CarSuit] ❌ No se encontró 'Body' dentro de auto!")
+	return
+end
+
+-- Buscar el MeshPart dentro de Body
+local carroceria = nil
+for _, child in pairs(bodyModel:GetDescendants()) do
+	if child:IsA("MeshPart") then
+		carroceria = child
+		break
+	end
+end
+
 if not carroceria then
-	warn("[CarSuit] ❌ No se encontró 'Carroceria' dentro de auto!")
+	warn("[CarSuit] ❌ No se encontró MeshPart dentro de Body!")
 	return
 end
 
@@ -86,10 +103,10 @@ local conductorHumanoid = conductor:WaitForChild("Humanoid")
 conductorHumanoid.PlatformStand = true
 local conductorAnimator = conductorHumanoid:WaitForChild("Animator")
 
-local volante = coche:FindFirstChild("Volante")
+-- Buscar volante en el coche
+local volante = coche:FindFirstChild("Volante", true) -- true = búsqueda recursiva
 if not volante then
-	warn("[CarSuit] ❌ No se encontró 'Volante' en el coche!")
-	return
+	warn("[CarSuit] ⚠ No se encontró 'Volante' en el coche (continuando sin volante)")
 end
 
 -- Primero configurar todas las partes como no colisionables
@@ -102,31 +119,50 @@ end
 -- Anclar solo la carrocería
 carroceria.Anchored = true
 
--- Obtener grupos de ruedas
-local ruedasDelanteras = auto:FindFirstChild("RuedasDelanteras")
-local ruedasTraseras = auto:FindFirstChild("RuedasTraseras")
+-- Obtener ruedas individuales
+local frontLeftTire = auto:FindFirstChild("FrontLeftTire")
+local frontRightTire = auto:FindFirstChild("FrontRightTire")
+local backRightTire = auto:FindFirstChild("BackRightTire")
+local backLeftTire = auto:FindFirstChild("BackLelfTire") -- Nota: tiene un typo "Lelf" en el modelo
 
-if not ruedasDelanteras then
-	warn("[CarSuit] ⚠ No se encontró 'RuedasDelanteras'")
-end
-
-if not ruedasTraseras then
-	warn("[CarSuit] ⚠ No se encontró 'RuedasTraseras'")
-end
+if not frontLeftTire then warn("[CarSuit] ⚠ No se encontró 'FrontLeftTire'") end
+if not frontRightTire then warn("[CarSuit] ⚠ No se encontró 'FrontRightTire'") end
+if not backRightTire then warn("[CarSuit] ⚠ No se encontró 'BackRightTire'") end
+if not backLeftTire then warn("[CarSuit] ⚠ No se encontró 'BackLelfTire'") end
 
 -- ========== SOLDAR PARTES DEL AUTO (EXCEPTO RUEDAS) ==========
--- Soldar partes que NO son ruedas
+-- Función para verificar si una parte está dentro de un modelo "Wheel" (NO "Brake")
+local function estaEnModeloWheel(parte)
+	local parent = parte.Parent
+	while parent and parent ~= auto do
+		if parent:IsA("Model") and parent.Name == "Wheel" then
+			return true
+		end
+		parent = parent.Parent
+	end
+	return false
+end
+
+-- Soldar partes que NO son las ruedas (Wheel)
+-- Los frenos (Brake) SÍ se sueldan a la carrocería
+local frenosSoldados = 0
 for _, parte in pairs(auto:GetDescendants()) do
 	if parte:IsA("BasePart") and parte ~= carroceria then
-		-- No soldar las ruedas, las conectaremos con Motor6D
-		local esRueda = false
-		if ruedasDelanteras and parte:IsDescendantOf(ruedasDelanteras) then
-			esRueda = true
-		elseif ruedasTraseras and parte:IsDescendantOf(ruedasTraseras) then
-			esRueda = true
-		end
+		-- Solo excluir si está dentro de un modelo "Wheel" (Tire + Rim)
+		-- Los "Brake" se soldarán normalmente
+		if not estaEnModeloWheel(parte) then
+			-- Verificar si es un freno para el contador
+			local parent = parte.Parent
+			local esBrake = false
+			while parent and parent ~= auto do
+				if parent:IsA("Model") and parent.Name == "Brake" then
+					esBrake = true
+					frenosSoldados = frenosSoldados + 1
+					break
+				end
+				parent = parent.Parent
+			end
 
-		if not esRueda then
 			local weld = Instance.new("WeldConstraint")
 			weld.Part0 = carroceria
 			weld.Part1 = parte
@@ -135,39 +171,121 @@ for _, parte in pairs(auto:GetDescendants()) do
 	end
 end
 
+print("[CarSuit] ✓ Partes soldadas - Frenos: " .. frenosSoldados)
+
 -- ========== CONFIGURAR RUEDAS CON MOTOR6D ==========
 local motoresRuedasDelanteras = {}
 local motoresRuedasTraseras = {}
 local anguloRotacionRueda = 0
 
+-- Función para encontrar el MeshPart principal de una rueda (dentro del modelo "Wheel")
+local function encontrarMeshPartRueda(tireModel)
+	if not tireModel then return nil end
+
+	-- Buscar el modelo "Wheel" dentro del modelo de neumático
+	local wheelModel = tireModel:FindFirstChild("Wheel")
+	if not wheelModel then
+		warn("[CarSuit] ⚠ No se encontró modelo 'Wheel' dentro de " .. tireModel.Name)
+		return nil
+	end
+
+	-- Primero intentar encontrar el Tire dentro de Wheel
+	local tireSubModel = wheelModel:FindFirstChild("Tire")
+	if tireSubModel then
+		-- Buscar el primer MeshPart dentro de Tire
+		for _, desc in pairs(tireSubModel:GetDescendants()) do
+			if desc:IsA("MeshPart") then
+				return desc
+			end
+		end
+	end
+
+	-- Si no encontramos Tire o no tiene MeshPart, buscar en Rim
+	local rimModel = wheelModel:FindFirstChild("Rim")
+	if rimModel then
+		for _, desc in pairs(rimModel:GetDescendants()) do
+			if desc:IsA("MeshPart") then
+				return desc
+			end
+		end
+	end
+
+	-- Como último recurso, devolver el primer MeshPart dentro de "Wheel"
+	for _, desc in pairs(wheelModel:GetDescendants()) do
+		if desc:IsA("MeshPart") then
+			return desc
+		end
+	end
+
+	return nil
+end
+
+-- Función para soldar todas las partes dentro de Wheel (Tire + Rim) entre sí
+local function soldarPartesWheel(wheelModel, ruedaPrincipal)
+	for _, parte in pairs(wheelModel:GetDescendants()) do
+		if parte:IsA("BasePart") and parte ~= ruedaPrincipal then
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = ruedaPrincipal
+			weld.Part1 = parte
+			weld.Parent = ruedaPrincipal
+		end
+	end
+end
+
 -- Función para crear Motor6D para una rueda
-local function crearMotorRueda(rueda, esDelantera)
-	local offset = carroceria.CFrame:ToObjectSpace(rueda.CFrame)
+local function crearMotorRueda(tireModel, esDelantera, nombreRueda)
+	local ruedaMesh = encontrarMeshPartRueda(tireModel)
+	if not ruedaMesh then
+		warn("[CarSuit] ❌ No se encontró MeshPart en " .. nombreRueda)
+		return nil
+	end
+
+	-- Soldar todas las partes de Wheel (Tire + Rim) a la rueda principal
+	local wheelModel = tireModel:FindFirstChild("Wheel")
+	if wheelModel then
+		soldarPartesWheel(wheelModel, ruedaMesh)
+	end
+
+	local offset = carroceria.CFrame:ToObjectSpace(ruedaMesh.CFrame)
 	local motor = Instance.new("Motor6D")
-	motor.Name = "Motor_" .. rueda.Name
+	motor.Name = "Motor_" .. nombreRueda
 	motor.Part0 = carroceria
-	motor.Part1 = rueda
+	motor.Part1 = ruedaMesh
 	motor.C0 = offset
 	motor.Parent = carroceria
+
+	print("[CarSuit] ✓ " .. nombreRueda .. " conectada")
 	return motor
 end
 
--- Conectar ruedas delanteras (MeshPart único)
-if ruedasDelanteras and ruedasDelanteras:IsA("BasePart") then
-	local motor = crearMotorRueda(ruedasDelanteras, true)
-	table.insert(motoresRuedasDelanteras, {motor = motor, offset = motor.C0})
-	print("[CarSuit] ✓ Ruedas delanteras conectadas")
-else
-	warn("[CarSuit] ❌ No hay ruedas delanteras")
+-- Conectar ruedas delanteras
+if frontLeftTire then
+	local motor = crearMotorRueda(frontLeftTire, true, "FrontLeftTire")
+	if motor then
+		table.insert(motoresRuedasDelanteras, {motor = motor, offset = motor.C0})
+	end
 end
 
--- Conectar ruedas traseras (MeshPart único)
-if ruedasTraseras and ruedasTraseras:IsA("BasePart") then
-	local motor = crearMotorRueda(ruedasTraseras, false)
-	table.insert(motoresRuedasTraseras, {motor = motor, offset = motor.C0})
-	print("[CarSuit] ✓ Ruedas traseras conectadas")
-else
-	warn("[CarSuit] ❌ No hay ruedas traseras")
+if frontRightTire then
+	local motor = crearMotorRueda(frontRightTire, true, "FrontRightTire")
+	if motor then
+		table.insert(motoresRuedasDelanteras, {motor = motor, offset = motor.C0})
+	end
+end
+
+-- Conectar ruedas traseras
+if backRightTire then
+	local motor = crearMotorRueda(backRightTire, false, "BackRightTire")
+	if motor then
+		table.insert(motoresRuedasTraseras, {motor = motor, offset = motor.C0})
+	end
+end
+
+if backLeftTire then
+	local motor = crearMotorRueda(backLeftTire, false, "BackLeftTire")
+	if motor then
+		table.insert(motoresRuedasTraseras, {motor = motor, offset = motor.C0})
+	end
 end
 -- ========================================================
 
@@ -181,16 +299,25 @@ for _, parte in pairs(conductor:GetDescendants()) do
 	end
 end
 
--- Guardar offset del volante respecto al coche
-local volanteOffset = carroceria.CFrame:ToObjectSpace(volante.CFrame)
+-- Guardar offset del volante respecto al coche (solo si existe)
+local volanteOffset = nil
+local motorVolante = nil
 
--- Motor6D para el volante
-local motorVolante = Instance.new("Motor6D")
-motorVolante.Name = "VolanteMotor"
-motorVolante.Part0 = carroceria
-motorVolante.Part1 = volante
-motorVolante.C0 = volanteOffset
-motorVolante.Parent = carroceria
+if volante then
+	volanteOffset = carroceria.CFrame:ToObjectSpace(volante.CFrame)
+
+	-- Motor6D para el volante
+	motorVolante = Instance.new("Motor6D")
+	motorVolante.Name = "VolanteMotor"
+	motorVolante.Part0 = carroceria
+	motorVolante.Part1 = volante
+	motorVolante.C0 = volanteOffset
+	motorVolante.Parent = carroceria
+
+	print("[CarSuit] ✓ Volante conectado")
+else
+	print("[CarSuit] ⚠ Auto sin volante")
+end
 -- ========================================================
 
 -- ========== COPIAR APARIENCIA AL CONDUCTOR ==========
@@ -306,37 +433,39 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 
 	anguloActual = anguloActual + (anguloObjetivo - anguloActual) * dt * VELOCIDAD_GIRO
-	motorVolante.C0 = volanteOffset * CFrame.Angles(0, math.rad(anguloActual), 0)
+
+	-- Actualizar volante solo si existe
+	if motorVolante and volanteOffset then
+		motorVolante.C0 = volanteOffset * CFrame.Angles(0, math.rad(anguloActual), 0)
+	end
 
 	local pitchObjetivo = obtenerPitchSuelo()
 	pitchActual = pitchActual + (pitchObjetivo - pitchActual) * dt * VELOCIDAD_INCLINACION
 
 	local rotacionBase = rootPart.CFrame - rootPart.Position
 	local inclinacion = CFrame.Angles(pitchActual, 0, 0)
+	local rotacion180 = CFrame.Angles(0, math.rad(180), 0) -- Rotar 180 grados para corregir dirección
 
-	carroceria.CFrame = CFrame.new(rootPart.Position + Vector3.new(0, offsetY, 0)) * rotacionBase * inclinacion
+	carroceria.CFrame = CFrame.new(rootPart.Position + Vector3.new(0, offsetY, 0)) * rotacionBase * rotacion180 * inclinacion
 
-	-- ========== ROTACIÓN Y DIRECCIÓN DE RUEDAS ==========
-	-- Calcular rotación de ruedas basada en velocidad
+	-- ========== ROTACIÓN DE RUEDAS ==========
+	-- Calcular rotación de ruedas basada en velocidad (solo adelante/atrás)
 	local velocidad = rootPart.AssemblyLinearVelocity.Magnitude
 	anguloRotacionRueda = anguloRotacionRueda + (velocidad / RADIO_RUEDA) * dt
 
-	-- Calcular ángulo de dirección para ruedas delanteras
-	local anguloRuedasDelanteras = (anguloActual / ANGULO_GIRO_VOLANTE) * ANGULO_GIRO_RUEDAS
-
-	-- Actualizar ruedas delanteras (girar + doblar)
+	-- Actualizar ruedas delanteras (solo rotan, no doblan)
 	for _, motorData in pairs(motoresRuedasDelanteras) do
 		local motor = motorData.motor
 		local offset = motorData.offset
-		-- Steering (doblar en Y) + Rotación (girar en X)
-		motor.C0 = offset * CFrame.Angles(anguloRotacionRueda, math.rad(anguloRuedasDelanteras), 0)
+		-- Solo rotación en X (adelante/atrás)
+		motor.C0 = offset * CFrame.Angles(anguloRotacionRueda, 0, 0)
 	end
 
-	-- Actualizar ruedas traseras (solo girar)
+	-- Actualizar ruedas traseras (solo rotan)
 	for _, motorData in pairs(motoresRuedasTraseras) do
 		local motor = motorData.motor
 		local offset = motorData.offset
-		-- Solo rotación en X
+		-- Solo rotación en X (adelante/atrás)
 		motor.C0 = offset * CFrame.Angles(anguloRotacionRueda, 0, 0)
 	end
 	-- ========================================================
