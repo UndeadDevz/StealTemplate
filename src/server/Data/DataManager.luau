@@ -49,7 +49,7 @@ end
 
 -- Calcula la velocidad del personaje basada en el nivel
 local function CalculateWalkSpeed(level: number)
-	return 1 + (level * 2)
+	return 4 + (level * 2)
 end
 
 -- Calcula el nivel máximo según los rebirths (Hard cap at 375)

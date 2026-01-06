@@ -72,7 +72,7 @@ local function IntentarRebirth(player: Player)
 		if player.Character then
 			local humanoid = player.Character:FindFirstChild("Humanoid")
 			if humanoid then
-				humanoid.WalkSpeed = 1 -- Velocidad base
+				humanoid.WalkSpeed = 4 -- Velocidad base
 			end
 		end
 		

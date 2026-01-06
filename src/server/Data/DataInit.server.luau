@@ -18,7 +18,7 @@ local PlayerStore = ProfileStore.New(GetStoreName(), Template)
 
 -- Calcula la velocidad del personaje basada en el nivel
 local function CalculateWalkSpeed(level: number)
-	return 1 + (level * 2)
+	return 4 + (level * 2)
 end
 
 -- Actualiza la velocidad del personaje respetando CustomSpeed
