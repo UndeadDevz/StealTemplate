@@ -10,6 +10,9 @@
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "$path": "src/client"
+      },
+      "StarterCharacterScripts": {
+        "$path": "src/character"
       }
     }
   }
