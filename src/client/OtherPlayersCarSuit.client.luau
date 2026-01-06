@@ -367,6 +367,11 @@ local function crearCocheParaOtroJugador(player, character)
 
 	local rpmVirtual = 0
 
+	-- Función para obtener el multiplicador de volumen desde settings
+	local function getVolumeMultiplier()
+		return _G.OtherPlayersVolume or 0.65
+	end
+
 	-- Calcular offset de altura
 	local offsetY = -humanoid.HipHeight + (lowerTorso.Size.Y / 2) + ALTURA_AUTO
 
@@ -422,10 +427,13 @@ local function crearCocheParaOtroJugador(player, character)
 		local velocidadCambio = (targetAlpha > rpmVirtual) and ACELERACION or FRENADO
 		rpmVirtual = rpmVirtual + (targetAlpha - rpmVirtual) * (dt * velocidadCambio)
 
-		-- Mezcla de capas
-		sLow.Volume = math.clamp(1 - (rpmVirtual * 2.5), 0, 0.7)
-		sMed.Volume = math.sin(rpmVirtual * math.pi) * 0.8
-		sHigh.Volume = math.clamp((rpmVirtual - 0.4) * 2, 0, 0.8)
+		-- Obtener multiplicador de volumen
+		local volumeMultiplier = getVolumeMultiplier()
+
+		-- Mezcla de capas (multiplicado por el volumen de settings)
+		sLow.Volume = math.clamp(1 - (rpmVirtual * 2.5), 0, 0.7) * volumeMultiplier
+		sMed.Volume = math.sin(rpmVirtual * math.pi) * 0.8 * volumeMultiplier
+		sHigh.Volume = math.clamp((rpmVirtual - 0.4) * 2, 0, 0.8) * volumeMultiplier
 
 		-- Variación de pitch
 		local pitchBase = 0.75 + (rpmVirtual * 0.75)

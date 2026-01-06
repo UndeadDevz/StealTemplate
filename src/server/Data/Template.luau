@@ -13,6 +13,7 @@ return {
 	Settings = {
 		Sound = 1, -- Volumen de sonido (0-1)
 		Music = 1, -- Volumen de música (0-1)
+		OtherPlayersVolume = 0.65, -- Volumen de otros jugadores (0-1)
 		UIScale = "Auto", -- Modo de escala: "Auto", "Mobile", "Desktop"
 		ThemeColor = "Cyan", -- Color del tema
 		FontName = "GothamBlack", -- Nombre de la fuente

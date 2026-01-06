@@ -516,15 +516,15 @@ local function makeSectionBlock(titleText, cardHeight)
 end
 
 --========================================================
--- AUDIO SECTION (2 sliders)
+-- AUDIO SECTION (3 sliders)
 --========================================================
-local _, audioCard = makeSectionBlock("AUDIO", 90)
+local _, audioCard = makeSectionBlock("AUDIO", 135)
 
-local function makeSlider(parent, name, xScale, labelText)
+local function makeSlider(parent, name, xScale, yOffset, widthScale, labelText)
 	local holder = Instance.new("Frame")
 	holder.BackgroundTransparency = 1
-	holder.Position = UDim2.new(xScale, 0, 0, 0)
-	holder.Size = UDim2.new(0.5, 0, 1, 0)
+	holder.Position = UDim2.new(xScale, 0, 0, yOffset)
+	holder.Size = UDim2.new(widthScale, 0, 0, 70)
 	holder.Parent = parent
 
 	local lbl = Instance.new("TextLabel")
@@ -543,7 +543,7 @@ local function makeSlider(parent, name, xScale, labelText)
 	local bar = Instance.new("Frame")
 	bar.Name = name .. "_Bar"
 	bar.BackgroundColor3 = Color3.fromRGB(40,40,52)
-	bar.Position = UDim2.new(0, 16, 0, 48)
+	bar.Position = UDim2.new(0, 16, 0, 38)
 	bar.Size = UDim2.new(1, -32, 0, 10)
 	bar.Parent = holder
 	corner(bar, 99)
@@ -571,8 +571,9 @@ local function makeSlider(parent, name, xScale, labelText)
 	return bar, fill, knob
 end
 
-local soundBar, soundFill, soundKnob = makeSlider(audioCard, "Sound", 0, "Sound")
-local musicBar, musicFill, musicKnob = makeSlider(audioCard, "Music", 0.5, "Music")
+local soundBar, soundFill, soundKnob = makeSlider(audioCard, "Sound", 0, 0, 0.5, "Sound")
+local musicBar, musicFill, musicKnob = makeSlider(audioCard, "Music", 0.5, 0, 0.5, "Music")
+local otherPlayersBar, otherPlayersFill, otherPlayersKnob = makeSlider(audioCard, "OtherPlayers", 0, 65, 1, "Other Players")
 
 -- Real-time volume application functions
 local function applyVolumeToSoundGroup(groupName, volume)
@@ -588,6 +589,13 @@ end
 
 local function applyMusicVolume(volume)
 	applyVolumeToSoundGroup("Music", volume)
+end
+
+-- Store other players volume globally so OtherPlayersCarSuit can access it
+_G.OtherPlayersVolume = 0.65
+
+local function applyOtherPlayersVolume(volume)
+	_G.OtherPlayersVolume = volume
 end
 
 local function bindSlider(bar, fill, knob, onChangeCallback)
@@ -647,6 +655,7 @@ end
 
 local getSound, setSound = bindSlider(soundBar, soundFill, soundKnob, applySoundVolume)
 local getMusic, setMusic = bindSlider(musicBar, musicFill, musicKnob, applyMusicVolume)
+local getOtherPlayers, setOtherPlayers = bindSlider(otherPlayersBar, otherPlayersFill, otherPlayersKnob, applyOtherPlayersVolume)
 
 --========================================================
 -- CONTROLS SECTION (UI Scale)
@@ -1097,6 +1106,10 @@ resetBtn.MouseButton1Click:Connect(function()
 	musicFill.Size = UDim2.new(0.65, 0, 1, 0)
 	musicKnob.Position = UDim2.new(0.65, -9, 0.5, -9)
 
+	otherPlayersFill.Size = UDim2.new(0.65, 0, 1, 0)
+	otherPlayersKnob.Position = UDim2.new(0.65, -9, 0.5, -9)
+	applyOtherPlayersVolume(0.65)
+
 	-- Reset theme + font
 	themeIndex, fontIndex, weightIndex = 1, 1, 1
 	themeColorBtn.Text = themeColors[themeIndex]
@@ -1120,8 +1133,7 @@ applyBtn.MouseButton1Click:Connect(function()
 
 	local soundValue = getSound()
 	local musicValue = getMusic()
-	-- local particlesOn = getParticles() -- ⚠️ Function doesn't exist, commented out
-	-- local shadowsOn = getShadows() -- ⚠️ Function doesn't exist, commented out
+	local otherPlayersValue = getOtherPlayers()
 
 	local themeColor = themeColorBtn.Text
 	local fontName = fontBtn.Text
@@ -1136,6 +1148,7 @@ applyBtn.MouseButton1Click:Connect(function()
 			local settingsData = {
 				Sound = soundValue,
 				Music = musicValue,
+				OtherPlayersVolume = otherPlayersValue,
 				UIScale = uiScaleMode,
 				ThemeColor = themeColor,
 				FontName = fontName,
@@ -1197,6 +1210,9 @@ task.spawn(function()
 		end
 		if result.Music then
 			setMusic(result.Music)
+		end
+		if result.OtherPlayersVolume then
+			setOtherPlayers(result.OtherPlayersVolume)
 		end
 
 		-- Aplicar UI Scale
