@@ -24,6 +24,10 @@ local ANIM_RIGHT = "rbxassetid://88962280420603"
 local RAYCAST_DISTANCIA = 10
 local VELOCIDAD_INCLINACION = 8
 local PITCH_MAXIMO = math.rad(35)
+
+-- Configuración de ruedas
+local ANGULO_GIRO_RUEDAS = 30 -- Ángulo máximo de giro de ruedas delanteras
+local RADIO_RUEDA = 1 -- Radio de las ruedas (ajustar según tu modelo)
 -- ===================================
 
 -- Calcular offset de altura una sola vez
@@ -59,22 +63,123 @@ local coche = cocheOriginal:Clone()
 coche.Parent = workspace
 
 -- Configurar partes del coche
-local carroceria = coche.PrimaryPart or coche:FindFirstChildWhichIsA("BasePart")
-for _, parte in pairs(coche:GetDescendants()) do
-	if parte:IsA("BasePart") then
-		parte.CanCollide = false
-		parte.Anchored = false
-	end
+local auto = coche:FindFirstChild("auto")
+if not auto then
+	warn("[CarSuit] ❌ No se encontró 'auto' en el coche!")
+	return
 end
 
-carroceria.Anchored = true
+local carroceria = auto:FindFirstChild("Carroceria")
+if not carroceria then
+	warn("[CarSuit] ❌ No se encontró 'Carroceria' dentro de auto!")
+	return
+end
 
 -- Buscar conductor y volante
-local conductor = coche:WaitForChild("Conductor")
+local conductor = coche:FindFirstChild("Conductor")
+if not conductor then
+	warn("[CarSuit] ❌ No se encontró 'Conductor' en el coche!")
+	return
+end
+
 local conductorHumanoid = conductor:WaitForChild("Humanoid")
 conductorHumanoid.PlatformStand = true
 local conductorAnimator = conductorHumanoid:WaitForChild("Animator")
-local volante = coche:WaitForChild("Volante")
+
+local volante = coche:FindFirstChild("Volante")
+if not volante then
+	warn("[CarSuit] ❌ No se encontró 'Volante' en el coche!")
+	return
+end
+
+-- Primero configurar todas las partes como no colisionables
+for _, parte in pairs(coche:GetDescendants()) do
+	if parte:IsA("BasePart") then
+		parte.CanCollide = false
+	end
+end
+
+-- Anclar solo la carrocería
+carroceria.Anchored = true
+
+-- Obtener grupos de ruedas
+local ruedasDelanteras = auto:FindFirstChild("RuedasDelanteras")
+local ruedasTraseras = auto:FindFirstChild("RuedasTraseras")
+
+if not ruedasDelanteras then
+	warn("[CarSuit] ⚠ No se encontró 'RuedasDelanteras'")
+end
+
+if not ruedasTraseras then
+	warn("[CarSuit] ⚠ No se encontró 'RuedasTraseras'")
+end
+
+-- ========== SOLDAR PARTES DEL AUTO (EXCEPTO RUEDAS) ==========
+-- Soldar partes que NO son ruedas
+for _, parte in pairs(auto:GetDescendants()) do
+	if parte:IsA("BasePart") and parte ~= carroceria then
+		-- No soldar las ruedas, las conectaremos con Motor6D
+		local esRueda = false
+		if ruedasDelanteras and parte:IsDescendantOf(ruedasDelanteras) then
+			esRueda = true
+		elseif ruedasTraseras and parte:IsDescendantOf(ruedasTraseras) then
+			esRueda = true
+		end
+
+		if not esRueda then
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = carroceria
+			weld.Part1 = parte
+			weld.Parent = carroceria
+		end
+	end
+end
+
+-- ========== CONFIGURAR RUEDAS CON MOTOR6D ==========
+local motoresRuedasDelanteras = {}
+local motoresRuedasTraseras = {}
+local anguloRotacionRueda = 0
+
+-- Función para crear Motor6D para una rueda
+local function crearMotorRueda(rueda, esDelantera)
+	local offset = carroceria.CFrame:ToObjectSpace(rueda.CFrame)
+	local motor = Instance.new("Motor6D")
+	motor.Name = "Motor_" .. rueda.Name
+	motor.Part0 = carroceria
+	motor.Part1 = rueda
+	motor.C0 = offset
+	motor.Parent = carroceria
+	return motor
+end
+
+-- Conectar ruedas delanteras (MeshPart único)
+if ruedasDelanteras and ruedasDelanteras:IsA("BasePart") then
+	local motor = crearMotorRueda(ruedasDelanteras, true)
+	table.insert(motoresRuedasDelanteras, {motor = motor, offset = motor.C0})
+	print("[CarSuit] ✓ Ruedas delanteras conectadas")
+else
+	warn("[CarSuit] ❌ No hay ruedas delanteras")
+end
+
+-- Conectar ruedas traseras (MeshPart único)
+if ruedasTraseras and ruedasTraseras:IsA("BasePart") then
+	local motor = crearMotorRueda(ruedasTraseras, false)
+	table.insert(motoresRuedasTraseras, {motor = motor, offset = motor.C0})
+	print("[CarSuit] ✓ Ruedas traseras conectadas")
+else
+	warn("[CarSuit] ❌ No hay ruedas traseras")
+end
+-- ========================================================
+
+-- Soldar TODAS las partes del conductor a la carrocería
+for _, parte in pairs(conductor:GetDescendants()) do
+	if parte:IsA("BasePart") then
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = carroceria
+		weld.Part1 = parte
+		weld.Parent = carroceria
+	end
+end
 
 -- Guardar offset del volante respecto al coche
 local volanteOffset = carroceria.CFrame:ToObjectSpace(volante.CFrame)
@@ -86,6 +191,7 @@ motorVolante.Part0 = carroceria
 motorVolante.Part1 = volante
 motorVolante.C0 = volanteOffset
 motorVolante.Parent = carroceria
+-- ========================================================
 
 -- ========== COPIAR APARIENCIA AL CONDUCTOR ==========
 local function copiarApariencia()
@@ -209,6 +315,31 @@ RunService.RenderStepped:Connect(function(dt)
 	local inclinacion = CFrame.Angles(pitchActual, 0, 0)
 
 	carroceria.CFrame = CFrame.new(rootPart.Position + Vector3.new(0, offsetY, 0)) * rotacionBase * inclinacion
+
+	-- ========== ROTACIÓN Y DIRECCIÓN DE RUEDAS ==========
+	-- Calcular rotación de ruedas basada en velocidad
+	local velocidad = rootPart.AssemblyLinearVelocity.Magnitude
+	anguloRotacionRueda = anguloRotacionRueda + (velocidad / RADIO_RUEDA) * dt
+
+	-- Calcular ángulo de dirección para ruedas delanteras
+	local anguloRuedasDelanteras = (anguloActual / ANGULO_GIRO_VOLANTE) * ANGULO_GIRO_RUEDAS
+
+	-- Actualizar ruedas delanteras (girar + doblar)
+	for _, motorData in pairs(motoresRuedasDelanteras) do
+		local motor = motorData.motor
+		local offset = motorData.offset
+		-- Steering (doblar en Y) + Rotación (girar en X)
+		motor.C0 = offset * CFrame.Angles(anguloRotacionRueda, math.rad(anguloRuedasDelanteras), 0)
+	end
+
+	-- Actualizar ruedas traseras (solo girar)
+	for _, motorData in pairs(motoresRuedasTraseras) do
+		local motor = motorData.motor
+		local offset = motorData.offset
+		-- Solo rotación en X
+		motor.C0 = offset * CFrame.Angles(anguloRotacionRueda, 0, 0)
+	end
+	-- ========================================================
 end)
 
 -- ========== ESTADOS DEL HUMANOID ==========
@@ -232,4 +363,4 @@ player.CharacterRemoving:Connect(function()
 	coche:Destroy()
 end)
 
-print("Car-Suit listo!")
+print("[CarSuit] ✓ Car-Suit listo!")
