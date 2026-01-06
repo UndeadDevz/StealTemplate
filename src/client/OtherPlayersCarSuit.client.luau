@@ -19,6 +19,22 @@ local localPlayer = Players.LocalPlayer
 local NOMBRE_COCHE = "CocheMesh"
 local ALTURA_AUTO = 0.2
 local RADIO_RUEDA = 1
+
+-- Animaciones
+local ANIM_IDLE = "rbxassetid://72471066577154"
+local ANIM_LEFT = "rbxassetid://136541988317425"
+local ANIM_RIGHT = "rbxassetid://88962280420603"
+
+-- Sonidos del motor
+local ID_LOW  = "rbxassetid://96527617819964"
+local ID_MED  = "rbxassetid://75711152458818"
+local ID_HIGH = "rbxassetid://92379305033455"
+local VEL_MAX = 300
+local ACELERACION = 10
+local FRENADO = 4
+
+-- Umbral para detectar giro
+local UMBRAL_GIRO = 0.5 -- Velocidad angular para detectar giro
 -- ===================================
 
 -- Tabla para guardar los coches de otros jugadores
@@ -191,6 +207,7 @@ local function crearCocheParaOtroJugador(player, character)
 
 	local conductorHumanoid = conductor:WaitForChild("Humanoid")
 	conductorHumanoid.PlatformStand = true
+	local conductorAnimator = conductorHumanoid:WaitForChild("Animator")
 
 	-- Configurar todas las partes como no colisionables
 	for _, parte in pairs(coche:GetDescendants()) do
@@ -291,12 +308,71 @@ local function crearCocheParaOtroJugador(player, character)
 
 	pcall(copiarApariencia)
 
+	-- ========== ANIMACIONES DEL CONDUCTOR ==========
+	local animIdle = Instance.new("Animation")
+	animIdle.AnimationId = ANIM_IDLE
+	local trackIdle = conductorAnimator:LoadAnimation(animIdle)
+	trackIdle.Priority = Enum.AnimationPriority.Action
+	trackIdle.Looped = true
+
+	local animLeft = Instance.new("Animation")
+	animLeft.AnimationId = ANIM_LEFT
+	local trackLeft = conductorAnimator:LoadAnimation(animLeft)
+	trackLeft.Priority = Enum.AnimationPriority.Action2
+	trackLeft.Looped = true
+
+	local animRight = Instance.new("Animation")
+	animRight.AnimationId = ANIM_RIGHT
+	local trackRight = conductorAnimator:LoadAnimation(animRight)
+	trackRight.Priority = Enum.AnimationPriority.Action2
+	trackRight.Looped = true
+
+	trackIdle:Play()
+
+	local animActual = "idle"
+
+	local function actualizarAnimacion(nuevaAnim)
+		if animActual == nuevaAnim then return end
+
+		if animActual == "left" then
+			trackLeft:Stop(0.2)
+		elseif animActual == "right" then
+			trackRight:Stop(0.2)
+		end
+
+		if nuevaAnim == "left" then
+			trackLeft:Play(0.2)
+		elseif nuevaAnim == "right" then
+			trackRight:Play(0.2)
+		end
+
+		animActual = nuevaAnim
+	end
+
+	-- ========== SONIDOS DEL MOTOR ==========
+	local function crearCapaSonido(nombre, id)
+		local s = Instance.new("Sound")
+		s.Name = nombre
+		s.SoundId = id
+		s.Looped = true
+		s.Volume = 0
+		s.Parent = rootPart
+		s:Play()
+		return s
+	end
+
+	local sLow = crearCapaSonido("LowLayer", ID_LOW)
+	local sMed = crearCapaSonido("MedLayer", ID_MED)
+	local sHigh = crearCapaSonido("HighLayer", ID_HIGH)
+
+	local rpmVirtual = 0
+
 	-- Calcular offset de altura
 	local offsetY = -humanoid.HipHeight + (lowerTorso.Size.Y / 2) + ALTURA_AUTO
 
 	-- Variables para seguimiento
 	local anguloRotacionRueda = 0
-	local velocidadAnterior = Vector3.new()
+	local cfAnterior = rootPart.CFrame
 
 	-- Conexión para seguir al jugador
 	local connection = RunService.RenderStepped:Connect(function(dt)
@@ -308,6 +384,9 @@ local function crearCocheParaOtroJugador(player, character)
 			if coche and coche.Parent then
 				coche:Destroy()
 			end
+			if sLow then sLow:Stop() sLow:Destroy() end
+			if sMed then sMed:Stop() sMed:Destroy() end
+			if sHigh then sHigh:Stop() sHigh:Destroy() end
 			otherPlayerCars[player.UserId] = nil
 			return
 		end
@@ -318,8 +397,43 @@ local function crearCocheParaOtroJugador(player, character)
 
 		carroceria.CFrame = CFrame.new(rootPart.Position + Vector3.new(0, offsetY, 0)) * rotacionBase * rotacion180
 
-		-- Calcular rotación de ruedas basada en velocidad
+		-- Calcular velocidad
 		local velocidad = rootPart.AssemblyLinearVelocity.Magnitude
+
+		-- ========== DETECTAR DIRECCIÓN DE GIRO ==========
+		-- Calcular la velocidad angular en Y (giro horizontal)
+		local velocidadAngular = rootPart.AssemblyAngularVelocity.Y
+
+		-- Actualizar animaciones basándose en la velocidad angular
+		if math.abs(velocidadAngular) > UMBRAL_GIRO and velocidad > 5 then
+			if velocidadAngular > 0 then
+				-- Girando a la izquierda
+				actualizarAnimacion("left")
+			else
+				-- Girando a la derecha
+				actualizarAnimacion("right")
+			end
+		else
+			actualizarAnimacion("idle")
+		end
+
+		-- ========== SONIDOS DEL MOTOR ==========
+		local targetAlpha = math.clamp(velocidad / VEL_MAX, 0, 1)
+		local velocidadCambio = (targetAlpha > rpmVirtual) and ACELERACION or FRENADO
+		rpmVirtual = rpmVirtual + (targetAlpha - rpmVirtual) * (dt * velocidadCambio)
+
+		-- Mezcla de capas
+		sLow.Volume = math.clamp(1 - (rpmVirtual * 2.5), 0, 0.7)
+		sMed.Volume = math.sin(rpmVirtual * math.pi) * 0.8
+		sHigh.Volume = math.clamp((rpmVirtual - 0.4) * 2, 0, 0.8)
+
+		-- Variación de pitch
+		local pitchBase = 0.75 + (rpmVirtual * 0.75)
+		sLow.PlaybackSpeed = pitchBase
+		sMed.PlaybackSpeed = pitchBase
+		sHigh.PlaybackSpeed = pitchBase
+
+		-- ========== ROTACIÓN DE RUEDAS ==========
 		anguloRotacionRueda = anguloRotacionRueda + (velocidad / RADIO_RUEDA) * dt
 
 		-- Actualizar ruedas
@@ -334,6 +448,9 @@ local function crearCocheParaOtroJugador(player, character)
 			local offset = motorData.offset
 			motor.C0 = offset * CFrame.Angles(anguloRotacionRueda, 0, 0)
 		end
+
+		-- Actualizar CFrame anterior
+		cfAnterior = rootPart.CFrame
 	end)
 
 	-- Limpiar cuando el jugador muere
@@ -344,6 +461,9 @@ local function crearCocheParaOtroJugador(player, character)
 		if coche and coche.Parent then
 			coche:Destroy()
 		end
+		if sLow then sLow:Stop() sLow:Destroy() end
+		if sMed then sMed:Stop() sMed:Destroy() end
+		if sHigh then sHigh:Stop() sHigh:Destroy() end
 		otherPlayerCars[player.UserId] = nil
 	end)
 
