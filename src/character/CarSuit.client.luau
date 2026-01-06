@@ -37,11 +37,16 @@ local offsetY = -humanoid.HipHeight + (lowerTorso.Size.Y / 2) + ALTURA_AUTO
 
 -- ========== OCULTAR PERSONAJE REAL ==========
 local function ocultarPersonajeReal()
+	-- Ocultar todas las partes del personaje excepto HumanoidRootPart
 	for _, parte in pairs(character:GetDescendants()) do
 		if parte:IsA("BasePart") and parte.Name ~= "HumanoidRootPart" then
 			parte.Transparency = 1
-		elseif parte:IsA("Decal") or parte:IsA("Texture") then
+		elseif parte:IsA("Decal") then
 			parte.Transparency = 1
+		elseif parte:IsA("Texture") then
+			parte.Transparency = 1
+		elseif parte:IsA("SpecialMesh") then
+			parte.Scale = Vector3.new(0, 0, 0)
 		elseif parte:IsA("Accessory") then
 			local handle = parte:FindFirstChild("Handle")
 			if handle then
@@ -49,6 +54,31 @@ local function ocultarPersonajeReal()
 			end
 		end
 	end
+
+	-- Ocultar la cara (Face)
+	local head = character:FindFirstChild("Head")
+	if head then
+		local face = head:FindFirstChild("face") or head:FindFirstChild("Face")
+		if face and face:IsA("Decal") then
+			face.Transparency = 1
+		end
+	end
+
+	-- Listener para nuevas partes que se agreguen al personaje
+	character.DescendantAdded:Connect(function(descendant)
+		if descendant:IsA("BasePart") and descendant.Name ~= "HumanoidRootPart" then
+			descendant.Transparency = 1
+		elseif descendant:IsA("Decal") or descendant:IsA("Texture") then
+			descendant.Transparency = 1
+		elseif descendant:IsA("SpecialMesh") then
+			descendant.Scale = Vector3.new(0, 0, 0)
+		elseif descendant:IsA("Accessory") then
+			local handle = descendant:FindFirstChild("Handle")
+			if handle then
+				handle.Transparency = 1
+			end
+		end
+	end)
 end
 
 ocultarPersonajeReal()
@@ -98,6 +128,9 @@ if not conductor then
 	warn("[CarSuit] ❌ No se encontró 'Conductor' en el coche!")
 	return
 end
+
+-- Renombrar el conductor con el nombre del jugador
+conductor.Name = player.Name
 
 local conductorHumanoid = conductor:WaitForChild("Humanoid")
 conductorHumanoid.PlatformStand = true
