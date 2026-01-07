@@ -12,12 +12,12 @@ rotorEvent.Name = "HelicopteroRotor"
 rotorEvent.Parent = ReplicatedStorage
 
 local CONFIG = {
-    MAX_SPEED = 75,
+    MAX_SPEED = 250,
     ALTURA_VUELO = 36,
-    DISTANCIA_LASER = 40,
-    DANO_POR_SEGUNDO = 50,
-    RANGO_DETECCION = 200,
-    UPDATE_RATE = 0.1,
+    DISTANCIA_LASER = 50,
+    DANO_POR_SEGUNDO = 40,
+    RANGO_DETECCION = 250,
+    UPDATE_RATE = 0.3,
     PLAYER_CACHE_RATE = 0.2,
 }
 
@@ -267,14 +267,14 @@ local function crearHelicoptero(modelo)
             
             self:setRotorSpeed(0.6)
             
-            local chgY = (posObjetivo.Y - self.engine.Position.Y) * 0.5
+            local chgY = (posObjetivo.Y - self.engine.Position.Y) * 1.2
             local distH = (Vector2.new(posJugador.X, posJugador.Z) - 
                           Vector2.new(self.engine.Position.X, self.engine.Position.Z)).Magnitude
             
-            if distH > 10 then
-                self.velocidadActual = math.min(self.velocidadActual + 2, CONFIG.MAX_SPEED)
+            if distH > 5 then
+                self.velocidadActual = math.min(self.velocidadActual + 8, CONFIG.MAX_SPEED)
             else
-                self.velocidadActual = self.velocidadActual * 0.8
+                self.velocidadActual = self.velocidadActual * 0.95
             end
             
             self.bodyVelocity.Velocity = (direccion * self.velocidadActual) + Vector3.new(0, chgY, 0)
