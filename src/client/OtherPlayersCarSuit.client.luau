@@ -32,6 +32,8 @@ local ID_HIGH = "rbxassetid://92379305033455"
 local VEL_MAX = 300
 local ACELERACION = 10
 local FRENADO = 4
+local VEL_PITCH_MAX = 100 -- Velocidad a partir de la cual el pitch no sube más
+local PITCH_MAX = 0.75 + ((VEL_PITCH_MAX / VEL_MAX) * 0.75) -- Pitch calculado a 100 de velocidad = 1.0
 
 -- Umbral para detectar giro
 local UMBRAL_GIRO = 0.5 -- Velocidad angular para detectar giro
@@ -430,13 +432,20 @@ local function crearCocheParaOtroJugador(player, character)
 		-- Obtener multiplicador de volumen
 		local volumeMultiplier = getVolumeMultiplier()
 
+		-- Detectar si está cayendo al vacío para silenciar el motor
+		-- Solo reducir volumen si la velocidad vertical es muy negativa (cayendo rápido)
+		local velocidadVertical = rootPart.AssemblyLinearVelocity.Y
+		if velocidadVertical < -100 then -- Cayendo muy rápido (más de 100 studs/s hacia abajo)
+			volumeMultiplier = volumeMultiplier * 0.1 -- Reducir volumen a 10% cuando está cayendo al vacío
+		end
+
 		-- Mezcla de capas (multiplicado por el volumen de settings)
 		sLow.Volume = math.clamp(1 - (rpmVirtual * 2.5), 0, 0.7) * volumeMultiplier
 		sMed.Volume = math.sin(rpmVirtual * math.pi) * 0.8 * volumeMultiplier
 		sHigh.Volume = math.clamp((rpmVirtual - 0.4) * 2, 0, 0.8) * volumeMultiplier
 
 		-- Variación de pitch
-		local pitchBase = 0.75 + (rpmVirtual * 0.75)
+		local pitchBase = math.clamp(0.75 + (rpmVirtual * 0.75), 0.75, PITCH_MAX)
 		sLow.PlaybackSpeed = pitchBase
 		sMed.PlaybackSpeed = pitchBase
 		sHigh.PlaybackSpeed = pitchBase
