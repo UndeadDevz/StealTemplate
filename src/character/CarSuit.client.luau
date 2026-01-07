@@ -444,7 +444,7 @@ local function obtenerPitchSuelo()
 	local rayAtras = workspace:Raycast(posicionAtras, Vector3.new(0, -RAYCAST_DISTANCIA, 0), raycastParams)
 
 	if rayFrente and rayAtras then
-		local diferencia = rayFrente.Position.Y - rayAtras.Position.Y
+		local diferencia = rayAtras.Position.Y - rayFrente.Position.Y
 		local pitch = math.atan2(diferencia, 6)
 		return math.clamp(pitch, -PITCH_MAXIMO, PITCH_MAXIMO)
 	end
