@@ -134,3 +134,21 @@ if not promptMultiplierPurchase then
 	promptMultiplierPurchase.Parent = remoteEventsFolder
 	print("✅ RemoteEvent 'PromptMultiplierPurchase' creado")
 end
+
+-- Crea el RemoteEvent para solicitar Rebirth Normal (gratis)
+local requestRebirth = remoteEventsFolder:FindFirstChild("RequestRebirth")
+if not requestRebirth then
+	requestRebirth = Instance.new("RemoteEvent")
+	requestRebirth.Name = "RequestRebirth"
+	requestRebirth.Parent = remoteEventsFolder
+	print("✅ RemoteEvent 'RequestRebirth' creado")
+end
+
+-- Crea el RemoteEvent para solicitar Rebirth Keep Level (producto)
+local requestRebirthKeepLevel = remoteEventsFolder:FindFirstChild("RequestRebirthKeepLevel")
+if not requestRebirthKeepLevel then
+	requestRebirthKeepLevel = Instance.new("RemoteEvent")
+	requestRebirthKeepLevel.Name = "RequestRebirthKeepLevel"
+	requestRebirthKeepLevel.Parent = remoteEventsFolder
+	print("✅ RemoteEvent 'RequestRebirthKeepLevel' creado")
+end

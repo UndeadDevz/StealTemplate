@@ -38,7 +38,10 @@ local PRODUCTOS = {
 	[3499900814] = { Type = "EXP", Value = 1000000 },  -- 1M
 
 	-- [[ CHECKPOINT TELEPORT (Consumible) ]] --
-	[3502953308] = { Type = "CheckpointTeleport", Value = 1 },  -- ⚠️ REEMPLAZAR 0 CON PRODUCT ID REAL
+	[3502953308] = { Type = "CheckpointTeleport", Value = 1 },
+
+	-- [[ REBIRTH KEEP LEVEL (Consumible) ]] --
+	[3505671943] = { Type = "RebirthKeepLevel", Value = 1 },  -- ⚠️ REEMPLAZAR 0 CON PRODUCT ID REAL
 
 	-- [[ PISTAS DESBLOQUEABLES ]] --
 	[3503497564] = { Type = "Track", Value = 3 },  -- Zona x3
@@ -80,6 +83,25 @@ local function ProcessReceipt(receiptInfo)
 			teleportEvent:FireClient(player)
 
 			return Enum.ProductPurchaseDecision.PurchaseGranted
+
+		-- LOGICA PARA REBIRTH KEEP LEVEL
+		elseif data.Type == "RebirthKeepLevel" then
+			print("🌟 Rebirth Keep Level comprado por:", player.Name)
+
+			-- Llamar a la función global exportada desde RebirthSystem
+			if _G.RebirthKeepLevel then
+				local success = _G.RebirthKeepLevel(player)
+				if success then
+					return Enum.ProductPurchaseDecision.PurchaseGranted
+				else
+					-- No cumple requisitos, no consumir compra
+					return Enum.ProductPurchaseDecision.NotProcessedYet
+				end
+			else
+				warn("[MarketplaceManager] _G.RebirthKeepLevel no está disponible")
+				return Enum.ProductPurchaseDecision.NotProcessedYet
+			end
+
 		-- LOGICA PARA PISTAS DESBLOQUEABLES
 		elseif data.Type == "Track" then
 			DataManager.UnlockTrack(player, data.Value)

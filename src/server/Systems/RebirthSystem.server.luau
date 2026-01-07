@@ -37,17 +37,34 @@
 	- Rebirth 2: EXP x3
 	- Etc.
 
+	DOS TIPOS DE REBIRTH:
+	1. Rebirth Normal (Gratis):
+	   - Resetea nivel a 1
+	   - Resetea EXP a 0
+	   - Resetea velocidad a base
+
+	2. Rebirth Keep Level (Developer Product):
+	   - Requiere comprar el producto "Rebirth Keep Level"
+	   - Mantiene tu nivel y EXP
+	   - Solo aumenta el contador de Rebirths
+
 	═══════════════════════════════════════════════════════════════════════
 ]]
 
 -- Services
 local Players = game:GetService("Players")
+local MarketplaceService = game:GetService("MarketplaceService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Modules
 local DataManager = require(script.Parent.Parent.Data.DataManager)
 
--- Intenta hacer Rebirth para un jugador
-local function IntentarRebirth(player: Player)
+-- ========== CONFIGURACIÓN ==========
+local REBIRTH_KEEP_LEVEL_PRODUCT_ID = 3505671943 -- ⚠️ REEMPLAZAR CON EL ID DEL DEVELOPER PRODUCT
+-- ===================================
+
+-- Rebirth NORMAL (Gratis) - Resetea nivel
+local function RebirthNormal(player: Player)
 	local stats = player:FindFirstChild("leaderstats")
 	if not stats then return false end
 
@@ -57,9 +74,6 @@ local function IntentarRebirth(player: Player)
 	if not level or not rebirths then return false end
 
 	local rebirthsActuales = rebirths.Value
-
-	-- REGLA: Cada rebirth pide 25 niveles más que el anterior
-	-- Rebirth 0 pide Nivel 25, Rebirth 1 pide Nivel 50, etc.
 	local nivelRequerido = 25 + (rebirthsActuales * 25)
 
 	if level.Value >= nivelRequerido then
@@ -76,7 +90,7 @@ local function IntentarRebirth(player: Player)
 			end
 		end
 
-		print("✨ " .. player.Name .. " hizo Rebirth! Rebirths: " .. (rebirthsActuales + 1) .. ", Nivel reseteado a 1")
+		print("✨ " .. player.Name .. " hizo Rebirth NORMAL! Rebirths: " .. (rebirthsActuales + 1) .. ", Nivel reseteado a 1")
 		return true
 	else
 		warn("⚠️ " .. player.Name .. " no tiene suficiente nivel. Necesita: " .. nivelRequerido .. ", tiene: " .. level.Value)
@@ -84,26 +98,73 @@ local function IntentarRebirth(player: Player)
 	end
 end
 
--- Esperar a que exista la ParteRebirth
-local parteRebirth = workspace:WaitForChild("ParteRebirth", 30)
+-- Rebirth KEEP LEVEL (Producto) - Mantiene nivel
+-- Esta función solo hace el rebirth, la compra se maneja en MarketplaceManager
+function RebirthKeepLevel(player: Player)
+	local stats = player:FindFirstChild("leaderstats")
+	if not stats then return false end
 
-if not parteRebirth then
-	warn("[RebirthSystem] ❌ No se encontró 'ParteRebirth' en Workspace. Por favor créala siguiendo las instrucciones del script.")
-else
-	print("[RebirthSystem] ✅ Sistema de Rebirth activado")
-	
-	-- Conectar evento de toque
-	parteRebirth.Touched:Connect(function(hit)
-		local player = Players:GetPlayerFromCharacter(hit.Parent)
-		if player then
-			-- Cooldown simple para evitar múltiples rebirths accidentales
-			local lastRebirth = parteRebirth:GetAttribute("LastRebirth_" .. player.UserId) or 0
-			local now = tick()
-			
-			if now - lastRebirth > 2 then -- 2 segundos de cooldown
-				parteRebirth:SetAttribute("LastRebirth_" .. player.UserId, now)
-				IntentarRebirth(player)
-			end
-		end
-	end)
+	local level = stats:FindFirstChild("Level")
+	local rebirths = stats:FindFirstChild("Rebirths")
+
+	if not level or not rebirths then return false end
+
+	local rebirthsActuales = rebirths.Value
+	local nivelRequerido = 25 + (rebirthsActuales * 25)
+
+	if level.Value >= nivelRequerido then
+		-- Realizar Rebirth SIN PERDER NIVEL
+		DataManager.UpdateStat(player, "Rebirths", rebirthsActuales + 1)
+		-- NO resetea Level ni EXP - el jugador mantiene su progreso!
+
+		print("🌟 " .. player.Name .. " hizo Rebirth KEEP LEVEL! Nivel: " .. level.Value .. ", Rebirths: " .. (rebirthsActuales + 1))
+		return true
+	else
+		warn("⚠️ " .. player.Name .. " no tiene suficiente nivel. Necesita: " .. nivelRequerido .. ", tiene: " .. level.Value)
+		return false
+	end
 end
+
+-- Exportar para que MarketplaceManager pueda usarlo
+_G.RebirthKeepLevel = RebirthKeepLevel
+
+-- Conectar al RemoteEvent para el botón UI
+local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
+local requestRebirth = remoteEvents:WaitForChild("RequestRebirth")
+
+-- Tabla para cooldown de solicitudes
+local rebirthCooldowns = {}
+
+-- Handler para Rebirth NORMAL (gratis)
+requestRebirth.OnServerEvent:Connect(function(player)
+	-- Cooldown simple para evitar múltiples rebirths accidentales
+	local lastRebirth = rebirthCooldowns[player.UserId] or 0
+	local now = tick()
+
+	if now - lastRebirth > 2 then -- 2 segundos de cooldown
+		rebirthCooldowns[player.UserId] = now
+		RebirthNormal(player)
+	else
+		warn("⚠️ " .. player.Name .. " debe esperar antes de hacer otro Rebirth")
+	end
+end)
+
+-- Handler para Rebirth KEEP LEVEL (requiere compra de producto)
+local requestRebirthKeepLevel = remoteEvents:WaitForChild("RequestRebirthKeepLevel")
+
+requestRebirthKeepLevel.OnServerEvent:Connect(function(player)
+	if REBIRTH_KEEP_LEVEL_PRODUCT_ID == 0 then
+		warn("[RebirthSystem] REBIRTH_KEEP_LEVEL_PRODUCT_ID no configurado")
+		return
+	end
+
+	-- Mostrar prompt de compra
+	MarketplaceService:PromptProductPurchase(player, REBIRTH_KEEP_LEVEL_PRODUCT_ID)
+end)
+
+-- Limpiar cooldowns cuando el jugador se va
+Players.PlayerRemoving:Connect(function(player)
+	rebirthCooldowns[player.UserId] = nil
+end)
+
+print("[RebirthSystem] ✅ Sistema de Rebirth activado (UI Button)")
