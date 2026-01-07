@@ -2,10 +2,16 @@
 	═══════════════════════════════════════════════════════════════════════
 	SPEED MULTIPLIER HANDLER
 	═══════════════════════════════════════════════════════════════════════
-	
-	Maneja el botón de compra de multiplicadores de velocidad.
+
+	Maneja el botón de compra de GAMEPASSES de multiplicadores de velocidad.
+	Los multiplicadores se STACKEAN (suman).
+
+	NOTA: Este botón muestra el "siguiente" multiplicador disponible.
+	Para un sistema completo de stackeo, considera crear una UI que permita
+	comprar cualquier multiplicador que el jugador no tenga.
+
 	Ubicación: Buttons > SpeedMultiplier (TextButton con PriceLabel y SpeedLabel)
-	
+
 	═══════════════════════════════════════════════════════════════════════
 ]]
 
@@ -24,7 +30,8 @@ local speedLabel = button:WaitForChild("SpeedLabel")
 local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local getStat = remoteEvents:WaitForChild("GetStat")
 
--- Configuración ordenada por niveles
+-- Configuración de GamePasses (ordenada por valor)
+-- IMPORTANTE: Ahora son GamePasses que se STACKEAN
 local UPGRADES = {
 	{ mult = 2,  id = 1661939202, price = 5 },
 	{ mult = 4,  id = 1661865221, price = 9 },
@@ -36,7 +43,7 @@ local UPGRADES = {
 	{ mult = 256, id = 1661041459, price = 599 },
 }
 
-local currentProductID = nil
+local currentGamePassID = nil
 
 local function UpdateUI()
 	local currentMult = getStat:InvokeServer("Multiplier")
@@ -60,22 +67,22 @@ local function UpdateUI()
 		button.Text = "x" .. nextUpgrade.mult .. " Speed"
 		priceLabel.Text = "Only " .. utf8.char(0xE002) .. nextUpgrade.price
 		speedLabel.Text = "x" .. nextUpgrade.mult .. " Speed"
-		currentProductID = nextUpgrade.id
+		currentGamePassID = nextUpgrade.id
 		button.Visible = true
 	else
-		-- Ya tiene el máximo (x128)
+		-- Ya tiene el máximo (x256)
 		button.Text = "MAXED"
 		speedLabel.Text = "MAXED"
 		priceLabel.Text = "MAXED"
-		currentProductID = nil
+		currentGamePassID = nil
 		-- Opcional: button.Visible = false
 	end
 end
 
 -- Detectar clic
 button.MouseButton1Click:Connect(function()
-	if currentProductID then
-		MarketplaceService:PromptProductPurchase(player, currentProductID)
+	if currentGamePassID then
+		MarketplaceService:PromptGamePassPurchase(player, currentGamePassID)
 	end
 end)
 

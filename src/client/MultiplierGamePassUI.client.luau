@@ -35,8 +35,15 @@ local MULTIPLIER_GAMEPASSES = {
 
 -- Función para comprar un GamePass de multiplicador
 local function PurchaseMultiplierGamePass(gamePassId)
-	print("[MultiplierGamePassUI] Solicitando compra de GamePass:", gamePassId)
-	promptMultiplierPurchase:FireServer(gamePassId)
+	-- Asegurar que sea número
+	local numericId = tonumber(gamePassId)
+
+	if not numericId then
+		warn("[MultiplierGamePassUI] gamePassId no es un número válido:", gamePassId)
+		return
+	end
+
+	promptMultiplierPurchase:FireServer(numericId)
 end
 
 -- Exportar función globalmente para uso en botones UI (opcional)
@@ -44,6 +51,3 @@ _G.PurchaseMultiplierGamePass = PurchaseMultiplierGamePass
 _G.MULTIPLIER_GAMEPASSES = MULTIPLIER_GAMEPASSES
 
 print("[MultiplierGamePassUI] ✅ Sistema inicializado")
-print("[MultiplierGamePassUI] Para comprar un multiplicador desde consola:")
-print("_G.PurchaseMultiplierGamePass(GAMEPASS_ID)")
-print("Ejemplo: _G.PurchaseMultiplierGamePass(1661939202) -- Comprar x2 Speed")

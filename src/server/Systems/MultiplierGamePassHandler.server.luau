@@ -70,17 +70,13 @@ end
 
 -- Función para calcular el multiplicador total del jugador
 local function CalculateTotalMultiplier(player)
-	print("[MultiplierGamePassHandler DEBUG] Calculando multiplicador para:", player.Name)
-
 	local totalMultiplier = 0
 
 	for _, gamePass in ipairs(MULTIPLIER_GAMEPASSES) do
 		local owns = PlayerOwnsGamePass(player, gamePass.ID)
-		print("[MultiplierGamePassHandler DEBUG] GamePass", gamePass.Value .. "x (ID:", gamePass.ID .. ") =", owns)
 
 		if owns then
 			totalMultiplier = totalMultiplier + gamePass.Value
-			print("[MultiplierGamePassHandler DEBUG] Sumando", gamePass.Value, "-> Total ahora:", totalMultiplier)
 		end
 	end
 
@@ -89,7 +85,6 @@ local function CalculateTotalMultiplier(player)
 		totalMultiplier = 1
 	end
 
-	print("[MultiplierGamePassHandler DEBUG] ✅ Multiplicador total para", player.Name .. ":", totalMultiplier .. "x")
 	return totalMultiplier
 end
 
@@ -98,13 +93,11 @@ local function UpdatePlayerMultiplier(player)
 	local totalMult = CalculateTotalMultiplier(player)
 	DataManager.UpdateStat(player, "Multiplier", totalMult)
 	print("📊 " .. player.Name .. " - Multiplicador actualizado: " .. totalMult .. "x")
-	return totalMult
+	return totalMult -- Retornar el multiplicador para verificación
 end
 
 -- Cuando un jugador entra, calcular su multiplicador
 Players.PlayerAdded:Connect(function(player)
-	print("[MultiplierGamePassHandler] Jugador conectado:", player.Name)
-
 	-- Esperar a que sus stats se carguen
 	task.wait(2)
 
@@ -114,7 +107,6 @@ end)
 -- Cuando un jugador se va, limpiar cache
 Players.PlayerRemoving:Connect(function(player)
 	gamePassCache[player.UserId] = nil
-	print("[MultiplierGamePassHandler] Cache limpiado para:", player.Name)
 end)
 
 -- Actualizar jugadores que ya están en el juego
@@ -145,14 +137,11 @@ end)
 MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, wasPurchased)
 	if not wasPurchased then return end
 
-	print("[MultiplierGamePassHandler] 🛒 Compra de GamePass detectada:", gamePassId)
-
 	-- Verificar si es uno de los GamePasses de multiplicador
 	local isMultiplierGamePass = false
 	for _, gamePass in ipairs(MULTIPLIER_GAMEPASSES) do
 		if gamePass.ID == gamePassId then
 			isMultiplierGamePass = true
-			print("[MultiplierGamePassHandler] ✅ Es un GamePass de multiplicador x" .. gamePass.Value)
 			break
 		end
 	end
@@ -163,10 +152,21 @@ MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gameP
 			gamePassCache[player.UserId][gamePassId] = nil
 		end
 
-		-- Actualizar inmediatamente
-		task.wait(1) -- Esperar 1 segundo para asegurar que la compra se procesó
-		UpdatePlayerMultiplier(player)
-		print("🎉 " .. player.Name .. " compró un GamePass de multiplicador! Actualizado inmediatamente.")
+		-- Intentar actualizar varias veces (la API de Roblox puede tardar)
+		task.wait(3)
+
+		-- Intentar hasta 5 veces con delays
+		for i = 1, 5 do
+			local newMult = UpdatePlayerMultiplier(player)
+
+			-- Si el multiplicador aumentó, la compra se procesó
+			if newMult > 1 then
+				print("🎉 " .. player.Name .. " compró GamePass de multiplicador! Total: " .. newMult .. "x")
+				break
+			else
+				task.wait(2)
+			end
+		end
 	end
 end)
 
@@ -179,33 +179,35 @@ local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local promptMultiplierPurchase = remoteEvents:WaitForChild("PromptMultiplierPurchase")
 
 promptMultiplierPurchase.OnServerEvent:Connect(function(player, gamePassId)
-	print("[MultiplierGamePassHandler] 🛒 Solicitud de compra de GamePass:", gamePassId, "de", player.Name)
+	-- Asegurar que sea número
+	local numericId = tonumber(gamePassId)
+	if not numericId then
+		warn("[MultiplierGamePassHandler] gamePassId no es un número:", gamePassId)
+		return
+	end
 
 	-- Verificar que el ID sea válido
 	local isValid = false
 	for _, gamePass in ipairs(MULTIPLIER_GAMEPASSES) do
-		if gamePass.ID == gamePassId then
+		if gamePass.ID == numericId then
 			isValid = true
-			print("[MultiplierGamePassHandler] ✅ GamePass válido x" .. gamePass.Value)
 			break
 		end
 	end
 
 	if not isValid then
-		warn("[MultiplierGamePassHandler] ⚠️ GamePass ID inválido:", gamePassId)
+		warn("[MultiplierGamePassHandler] GamePass ID inválido:", numericId)
 		return
 	end
 
 	-- Mostrar prompt de compra
 	task.spawn(function()
 		local success, err = pcall(function()
-			MarketplaceService:PromptGamePassPurchase(player, gamePassId)
+			MarketplaceService:PromptGamePassPurchase(player, numericId)
 		end)
 
-		if success then
-			print("[MultiplierGamePassHandler] ✓ Prompt mostrado a " .. player.Name)
-		else
-			warn("[MultiplierGamePassHandler] ❌ Error al mostrar prompt:", err)
+		if not success then
+			warn("[MultiplierGamePassHandler] Error al mostrar prompt:", err)
 		end
 	end)
 end)
