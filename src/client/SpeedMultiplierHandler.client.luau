@@ -26,14 +26,14 @@ local getStat = remoteEvents:WaitForChild("GetStat")
 
 -- Configuración ordenada por niveles
 local UPGRADES = {
-	{ mult = 2,  id = 3499797343, price = 5 },
-	{ mult = 4,  id = 3499832232, price = 9 },
-	{ mult = 8,  id = 3499832626, price = 19 },
-	{ mult = 16, id = 3499833065, price = 49 },
-	{ mult = 32, id = 3503035651, price = 89 },
-	{ mult = 64, id = 3503037417, price = 179 },
-	{ mult = 128, id = 3503036920, price = 289 },
-	{ mult = 256, id = 3503044526, price = 599 },
+	{ mult = 2,  id = 1661939202, price = 5 },
+	{ mult = 4,  id = 1661865221, price = 9 },
+	{ mult = 8,  id = 1659993882, price = 19 },
+	{ mult = 16, id = 1662049180, price = 49 },
+	{ mult = 32, id = 1660305540, price = 89 },
+	{ mult = 64, id = 1663886754, price = 179 },
+	{ mult = 128, id = 1663886755, price = 289 },
+	{ mult = 256, id = 1661041459, price = 599 },
 }
 
 local currentProductID = nil

@@ -26,7 +26,7 @@ local DataManager = require(script.Parent.Parent.Data.DataManager)
 
 -- ========== CONFIGURACIÓN ==========
 local TAG_WIN_ZONE = "WinZone"
-local X2_WINS_GAMEPASS_ID = 1694367675565474295 -- GamePass "x2 Wins"
+local X2_WINS_GAMEPASS_ID = 1661925212 -- GamePass "x2 Wins"
 -- ===================================
 
 -- Cache para GamePass (evitar múltiples llamadas a la API)
@@ -108,28 +108,42 @@ local function SetupZone(zona)
 			local baseWins = zona:GetAttribute("Wins") or 1
 
 			-- Verificar si tiene el GamePass x2 Wins
+			print("[WinsSystem DEBUG] Verificando GamePass para:", player.Name)
 			local hasX2Pass = PlayerHasX2Wins(player)
+			print("[WinsSystem DEBUG] ¿Tiene GamePass?:", hasX2Pass)
 			local finalWins = baseWins
 
 			if hasX2Pass then
 				finalWins = baseWins * 2
 				print("🌟 " .. player.Name .. " tiene x2 Wins GamePass! " .. baseWins .. " → " .. finalWins)
 			else
+				print("[WinsSystem DEBUG] No tiene GamePass, checando si ya fue notificado...")
 				-- Si no tiene el GamePass y aún no le hemos notificado
 				if not notifiedPlayers[player.UserId] then
 					notifiedPlayers[player.UserId] = true
+					print("[WinsSystem DEBUG] Primera vez sin GamePass, enviando notificación...")
 
 					-- Enviar notificación al cliente
 					local ReplicatedStorage = game:GetService("ReplicatedStorage")
 					local remoteEvents = ReplicatedStorage:FindFirstChild("RemoteEvents")
+					print("[WinsSystem DEBUG] RemoteEvents encontrado:", remoteEvents ~= nil)
 					if remoteEvents then
 						local notifyEvent = remoteEvents:FindFirstChild("NotifyX2WinsAvailable")
+						print("[WinsSystem DEBUG] NotifyX2WinsAvailable encontrado:", notifyEvent ~= nil)
 						if notifyEvent then
+							print("[WinsSystem DEBUG] ENVIANDO FireClient a", player.Name, "con baseWins:", baseWins)
 							notifyEvent:FireClient(player, baseWins)
+							print("[WinsSystem DEBUG] FireClient enviado!")
+						else
+							warn("[WinsSystem DEBUG] ❌ No se encontró NotifyX2WinsAvailable")
 						end
+					else
+						warn("[WinsSystem DEBUG] ❌ No se encontró RemoteEvents")
 					end
 
 					print("💡 Notificado a " .. player.Name .. " sobre x2 Wins GamePass")
+				else
+					print("[WinsSystem DEBUG] Ya fue notificado anteriormente")
 				end
 			end
 

@@ -1,53 +1,13 @@
 --[[
 	DEATH HANDLER - Sistema simple de muerte y checkpoint
-
-	GAMEPASS x2 Wins:
-	- Los jugadores con el GamePass tienen respawns ILIMITADOS y GRATIS
-	- No necesitan pagar el producto CheckpointTeleport
-
-	Sin GamePass:
-	- Muestra el botón cuando el jugador muere si tiene checkpoint guardado
-	- Requiere comprar el producto CheckpointTeleport (10 Robux)
+	Muestra el botón cuando el jugador muere si tiene checkpoint guardado
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local MarketplaceService = game:GetService("MarketplaceService")
-
--- ========== CONFIGURACIÓN ==========
-local X2_WINS_GAMEPASS_ID = 1694367675565474295 -- GamePass "x2 Wins"
--- ===================================
 
 -- Configurar respawn rápido (3 segundos)
 Players.RespawnTime = 3
-
--- Cache para GamePass
-local gamePassCache = {}
-
--- Función para verificar si el jugador tiene el GamePass x2 Wins
-local function PlayerHasX2Wins(player)
-	if X2_WINS_GAMEPASS_ID == 0 then
-		return false
-	end
-
-	-- Verificar en cache primero
-	if gamePassCache[player.UserId] ~= nil then
-		return gamePassCache[player.UserId]
-	end
-
-	-- Verificar con la API de Roblox
-	local success, ownsPass = pcall(function()
-		return MarketplaceService:UserOwnsGamePassAsync(player.UserId, X2_WINS_GAMEPASS_ID)
-	end)
-
-	if success then
-		gamePassCache[player.UserId] = ownsPass
-		return ownsPass
-	else
-		warn("[DeathHandler] Error al verificar GamePass:", ownsPass)
-		return false
-	end
-end
 
 -- Esperar CheckpointTracking
 print("[DeathHandler] Esperando CheckpointTracking...")
@@ -74,9 +34,8 @@ end
 
 local showEvent = remoteEvents:WaitForChild("ShowDeathPopup", 10)
 local teleportEvent = remoteEvents:WaitForChild("TeleportToCheckpoint", 10)
-local notifyFreeRespawnEvent = remoteEvents:WaitForChild("NotifyFreeRespawn", 10)
 
-if not showEvent or not teleportEvent or not notifyFreeRespawnEvent then
+if not showEvent or not teleportEvent then
 	warn("[DeathHandler] ❌ No se encontraron los RemoteEvents")
 	return
 end
@@ -114,29 +73,9 @@ local function setupPlayer(player)
 				return
 			end
 
-			-- Verificar si tiene el GamePass x2 Wins
-			local hasX2Pass = PlayerHasX2Wins(player)
-
-			if hasX2Pass then
-				-- RESPAWN GRATIS - Teleportar directamente al checkpoint
-				print("🌟", player.Name, "tiene x2 Wins GamePass - RESPAWN GRATIS!")
-
-				local character = player.Character
-				if character then
-					local rootPart = character:FindFirstChild("HumanoidRootPart")
-					if rootPart then
-						print("💎 Teleportando", player.Name, "a", checkpoint.CheckpointName, "(GRATIS)")
-						rootPart.CFrame = CFrame.new(checkpoint.Position + Vector3.new(0, 5, 0))
-
-						-- Notificar al cliente sobre el respawn gratis
-						notifyFreeRespawnEvent:FireClient(player, checkpoint.CheckpointName)
-					end
-				end
-			else
-				-- Sin GamePass, mostrar botón de compra
-				print("📢 ENVIANDO EVENTO para mostrar botón a", player.Name)
-				showEvent:FireClient(player, checkpoint)
-			end
+			-- Mostrar botón
+			print("📢 ENVIANDO EVENTO para mostrar botón a", player.Name)
+			showEvent:FireClient(player, checkpoint)
 		end)
 	end
 
@@ -157,7 +96,7 @@ for _, player in pairs(Players:GetPlayers()) do
 	setupPlayer(player)
 end
 
--- Handler de teleport (para compras via Developer Product)
+-- Handler de teleport
 teleportEvent.OnServerEvent:Connect(function(player)
 	print("🌀 Teleport solicitado por", player.Name)
 
@@ -181,11 +120,6 @@ teleportEvent.OnServerEvent:Connect(function(player)
 
 	print("💎 Teleportando", player.Name, "a", checkpoint.CheckpointName)
 	rootPart.CFrame = CFrame.new(checkpoint.Position + Vector3.new(0, 5, 0))
-end)
-
--- Limpiar cache cuando un jugador se va
-Players.PlayerRemoving:Connect(function(player)
-	gamePassCache[player.UserId] = nil
 end)
 
 print("[DeathHandler] ✅ Sistema activado")

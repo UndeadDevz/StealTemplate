@@ -7,10 +7,10 @@ local DataManager = require(script.Parent.Parent.Data.DataManager)
 	GAMEPASSES (No necesitan ProcessReceipt)
 	═══════════════════════════════════════════════════════════════════════
 
-	x2 Wins GamePass:
-	- ID configurado en WinsSystem.server.luau (línea 29)
+	x2 Wins GamePass (ID: 1661925212):
+	- Configurado en WinsSystem.server.luau y X2WinsGamePassHandler.server.luau
 	- Se verifica con MarketplaceService:UserOwnsGamePassAsync()
-	- Multiplica TODAS las wins por 2 automáticamente
+	- Beneficio: Multiplica TODAS las wins por 2 automáticamente
 	- No necesita estar en esta lista de productos
 
 	═══════════════════════════════════════════════════════════════════════
@@ -19,14 +19,14 @@ local DataManager = require(script.Parent.Parent.Data.DataManager)
 -- Configuración de TODOS los productos Developer Products (consumibles)
 local PRODUCTOS = {
 	-- [[ MULTIPLICADORES (Mejoras permanentes) ]] --
-	[3499797343] = { Type = "Multiplier", Value = 2 },
-	[3499832232] = { Type = "Multiplier", Value = 4 },
-	[3499832626] = { Type = "Multiplier", Value = 8 },
-	[3499833065] = { Type = "Multiplier", Value = 16 },
-	[3503035651] = { Type = "Multiplier", Value = 32 },
-	[3503037417] = { Type = "Multiplier", Value = 64 },
-	[3503036920] = { Type = "Multiplier", Value = 128 },
-	[3503044526] = { Type = "Multiplier", Value = 256 },
+	[1661939202] = { Type = "Multiplier", Value = 2 },
+	[1661865221] = { Type = "Multiplier", Value = 4 },
+	[1659993882] = { Type = "Multiplier", Value = 8 },
+	[1662049180] = { Type = "Multiplier", Value = 16 },
+	[1660305540] = { Type = "Multiplier", Value = 32 },
+	[1663886754] = { Type = "Multiplier", Value = 64 },
+	[1663886755] = { Type = "Multiplier", Value = 128 },
+	[1661041459] = { Type = "Multiplier", Value = 256 },
 
 	-- [[ PACKS DE EXPERIENCIA (Consumibles) ]] --
 	[3499890350] = { Type = "EXP", Value = 10000 },    -- 10k

@@ -24,30 +24,44 @@ local promptX2WinsPurchase = remoteEvents:WaitForChild("PromptX2WinsPurchase")
 
 -- Función para mostrar notificación con opción de compra
 local function showX2WinsNotification(baseWins)
+	print("[X2WinsGamePassPrompt DEBUG] 📢 showX2WinsNotification llamada con baseWins:", baseWins)
 	local doubledWins = baseWins * 2
+	print("[X2WinsGamePassPrompt DEBUG] Calculado doubledWins:", doubledWins)
 
 	-- Mostrar notificación de Roblox
-	pcall(function()
+	print("[X2WinsGamePassPrompt DEBUG] Intentando mostrar notificación...")
+	local success, err = pcall(function()
 		StarterGui:SetCore("SendNotification", {
 			Title = "💰 x2 Wins Available!",
-			Text = string.format("Get %d wins instead of %d! Tap to buy GamePass.", doubledWins, baseWins),
-			Duration = 8,
+			Text = string.format("Get %d wins instead of %d! Opening purchase prompt...", doubledWins, baseWins),
+			Duration = 5,
 			Icon = "rbxassetid://6031229361", -- Icono de monedas
-			Button1 = "Buy Now!",
-			Callback = function()
-				-- Cuando presionan el botón, pedir al servidor que abra el prompt
-				promptX2WinsPurchase:FireServer()
-			end
 		})
 	end)
 
+	if success then
+		print("[X2WinsGamePassPrompt DEBUG] ✅ Notificación mostrada exitosamente")
+	else
+		warn("[X2WinsGamePassPrompt DEBUG] ❌ Error al mostrar notificación:", err)
+	end
+
 	print("[X2WinsGamePassPrompt] Notificación mostrada - Base:", baseWins, "Con x2:", doubledWins)
+
+	-- Abrir prompt automáticamente después de 1 segundo
+	print("[X2WinsGamePassPrompt DEBUG] Esperando 1 segundo antes de abrir prompt...")
+	task.wait(1)
+	print("[X2WinsGamePassPrompt DEBUG] Enviando FireServer para abrir prompt de compra")
+	promptX2WinsPurchase:FireServer()
+	print("[X2WinsGamePassPrompt DEBUG] FireServer enviado!")
 end
 
 -- Escuchar cuando el servidor envía la notificación
+print("[X2WinsGamePassPrompt DEBUG] Conectando listener OnClientEvent...")
 notifyX2WinsAvailable.OnClientEvent:Connect(function(baseWins)
+	print("[X2WinsGamePassPrompt DEBUG] 🔔 OnClientEvent recibido! baseWins:", baseWins)
 	showX2WinsNotification(baseWins)
 end)
+print("[X2WinsGamePassPrompt DEBUG] Listener conectado")
 
 -- Buscar botón UI para comprar GamePass (OPCIONAL)
 -- Si tienes un botón en tu UI llamado "X2WinsButton", lo conecta automáticamente
