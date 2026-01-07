@@ -152,3 +152,12 @@ if not requestRebirthKeepLevel then
 	requestRebirthKeepLevel.Parent = remoteEventsFolder
 	print("✅ RemoteEvent 'RequestRebirthKeepLevel' creado")
 end
+
+-- Crea el RemoteEvent para notificar EXP ganada
+local expGainedEvent = remoteEventsFolder:FindFirstChild("ExpGainedEvent")
+if not expGainedEvent then
+	expGainedEvent = Instance.new("RemoteEvent")
+	expGainedEvent.Name = "ExpGainedEvent"
+	expGainedEvent.Parent = remoteEventsFolder
+	print("✅ RemoteEvent 'ExpGainedEvent' creado")
+end

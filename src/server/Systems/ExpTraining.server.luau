@@ -1,6 +1,11 @@
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService") -- Necesario para pedir compra
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataManager = require(script.Parent.Parent.Data.DataManager)
+
+-- Esperar al RemoteEvent
+local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
+local expGainedEvent = remoteEvents:WaitForChild("ExpGainedEvent")
 
 -- Mapa inverso: Saber qué ID comprar según el multiplicador de la zona
 local ZONE_PRODUCTS = {
@@ -91,6 +96,9 @@ while true do
 					DataManager.AddStat(player, "EXP", expGanada)
 					DataManager.AddStat(player, "TotalEXP", expGanada)
 					DataManager.CheckLevelUp(player)
+
+					-- Notificar al cliente la EXP ganada
+					expGainedEvent:FireClient(player, expGanada)
 				end
 			end
 		end

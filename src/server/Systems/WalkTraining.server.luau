@@ -1,5 +1,10 @@
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataManager = require(script.Parent.Parent.Data.DataManager)
+
+-- Esperar al RemoteEvent
+local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
+local expGainedEvent = remoteEvents:WaitForChild("ExpGainedEvent")
 
 -- CONFIGURACIÓN
 local INTERVALO = 0.1 -- Segundos para ganar EXP (10 veces por segundo)
@@ -41,6 +46,9 @@ while true do
 				DataManager.AddStat(player, "EXP", finalExp)
 				DataManager.AddStat(player, "TotalEXP", finalExp)
 				DataManager.CheckLevelUp(player)
+
+				-- Notificar al cliente la EXP ganada
+				expGainedEvent:FireClient(player, finalExp)
 
 				-- [[ FIN LÓGICA ]] --
 			end
