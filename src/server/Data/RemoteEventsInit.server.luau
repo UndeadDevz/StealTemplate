@@ -125,3 +125,12 @@ if not notifyFreeRespawn then
 	notifyFreeRespawn.Parent = remoteEventsFolder
 	print("✅ RemoteEvent 'NotifyFreeRespawn' creado")
 end
+
+-- Crea el RemoteEvent para comprar GamePasses de multiplicador
+local promptMultiplierPurchase = remoteEventsFolder:FindFirstChild("PromptMultiplierPurchase")
+if not promptMultiplierPurchase then
+	promptMultiplierPurchase = Instance.new("RemoteEvent")
+	promptMultiplierPurchase.Name = "PromptMultiplierPurchase"
+	promptMultiplierPurchase.Parent = remoteEventsFolder
+	print("✅ RemoteEvent 'PromptMultiplierPurchase' creado")
+end

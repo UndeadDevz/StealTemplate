@@ -13,20 +13,24 @@ local DataManager = require(script.Parent.Parent.Data.DataManager)
 	- Beneficio: Multiplica TODAS las wins por 2 automáticamente
 	- No necesita estar en esta lista de productos
 
+	Multiplicadores GamePasses (STACKEABLES):
+	- x2 Speed (ID: 1661939202) = +2
+	- x4 Speed (ID: 1661865221) = +4
+	- x8 Speed (ID: 1659993882) = +8
+	- x16 Speed (ID: 1662049180) = +16
+	- x32 Speed (ID: 1660305540) = +32
+	- x64 Speed (ID: 1663886754) = +64
+	- x128 Speed (ID: 1663886755) = +128
+	- x256 Speed (ID: 1661041459) = +256
+	- Configurado en MultiplierGamePassHandler.server.luau
+	- Se suman todos los que tenga el jugador (ej: x2 + x4 = 6x total)
+	- No necesitan estar en esta lista de productos
+
 	═══════════════════════════════════════════════════════════════════════
 ]]
 
 -- Configuración de TODOS los productos Developer Products (consumibles)
 local PRODUCTOS = {
-	-- [[ MULTIPLICADORES (Mejoras permanentes) ]] --
-	[1661939202] = { Type = "Multiplier", Value = 2 },
-	[1661865221] = { Type = "Multiplier", Value = 4 },
-	[1659993882] = { Type = "Multiplier", Value = 8 },
-	[1662049180] = { Type = "Multiplier", Value = 16 },
-	[1660305540] = { Type = "Multiplier", Value = 32 },
-	[1663886754] = { Type = "Multiplier", Value = 64 },
-	[1663886755] = { Type = "Multiplier", Value = 128 },
-	[1661041459] = { Type = "Multiplier", Value = 256 },
 
 	-- [[ PACKS DE EXPERIENCIA (Consumibles) ]] --
 	[3499890350] = { Type = "EXP", Value = 10000 },    -- 10k
@@ -45,26 +49,17 @@ local PRODUCTOS = {
 
 local function ProcessReceipt(receiptInfo)
 	local player = Players:GetPlayerByUserId(receiptInfo.PlayerId)
-	
+
 	if not player then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	
+
 	local productId = receiptInfo.ProductId
 	local data = PRODUCTOS[productId]
-	
-	if data then
-		-- LOGICA PARA MULTIPLICADORES
-		if data.Type == "Multiplier" then
-			local currentMult = DataManager.GetStat(player, "Multiplier") or 1
-			if data.Value > currentMult then
-				DataManager.UpdateStat(player, "Multiplier", data.Value)
-				print("✅ Mejora comprada: x" .. data.Value .. " Speed")
-			end
-			return Enum.ProductPurchaseDecision.PurchaseGranted
 
-		-- LOGICA PARA EXP (NUEVO)
-		elseif data.Type == "EXP" then
+	if data then
+		-- LOGICA PARA EXP
+		if data.Type == "EXP" then
 			-- 1. Sumar la EXP
 			DataManager.AddStat(player, "EXP", data.Value)
 
