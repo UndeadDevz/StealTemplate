@@ -6,14 +6,13 @@
 	CÓMO CONFIGURAR UNA ZONA DE WIN:
 	1. Crea una Part en el Workspace
 	2. Agrega el Tag "WinZone" usando el Tag Editor
-	3. Configura los atributos:
+	3. Configura el atributo:
 	   - Wins (number): Cantidad de wins que da (por defecto: 1)
-	   - IsPremium (boolean): Si es zona premium que requiere compra (por defecto: false)
 
-	ZONAS PREMIUM:
-	- Si IsPremium = true, el jugador debe comprar el producto "x2 wins" cada vez que toque la zona
-	- Al comprar, recibe las wins y se teleporta al spawn
-	- Cada vez que vuelva a pasar, debe comprar nuevamente (producto consumible)
+	MULTIPLICADOR x2 WINS (GamePass):
+	- Si el jugador tiene el GamePass x2 Wins, todas las wins se multiplican por 2
+	- Es una compra permanente (GamePass)
+	- Se aplica automáticamente a todas las zonas
 
 	═══════════════════════════════════════════════════════════════════════
 ]]
@@ -27,11 +26,14 @@ local DataManager = require(script.Parent.Parent.Data.DataManager)
 
 -- ========== CONFIGURACIÓN ==========
 local TAG_WIN_ZONE = "WinZone"
-local X2_WINS_PRODUCT_ID = 3505110469 -- ⚠️ REEMPLAZAR CON EL ID REAL DEL PRODUCTO "x2 wins"
+local X2_WINS_GAMEPASS_ID = 1694367675565474295 -- GamePass "x2 Wins"
 -- ===================================
 
--- Tabla para almacenar las compras pendientes (zona -> player)
-local pendingPurchases = {}
+-- Cache para GamePass (evitar múltiples llamadas a la API)
+local gamePassCache = {}
+
+-- Tabla para trackear a quién ya le mostramos la notificación
+local notifiedPlayers = {}
 
 -- Función para enviar al jugador al Spawn
 local function TeleportToSpawn(player)
@@ -55,18 +57,29 @@ local function TeleportToSpawn(player)
 	end
 end
 
--- Función para dar wins al jugador (llamada desde MarketplaceManager)
-function _G.GivePremiumWins(player, winsAmount)
-	if not player or not player.Parent then
-		return
+-- Función para verificar si el jugador tiene el GamePass x2 Wins
+local function PlayerHasX2Wins(player)
+	if X2_WINS_GAMEPASS_ID == 0 then
+		return false
 	end
 
-	-- Dar Wins
-	DataManager.AddStat(player, "Wins", winsAmount)
-	print("🏆 " .. player.Name .. " recibió " .. winsAmount .. " Win(s) premium!")
+	-- Verificar en cache primero
+	if gamePassCache[player.UserId] ~= nil then
+		return gamePassCache[player.UserId]
+	end
 
-	-- Teletransportar al Spawn
-	TeleportToSpawn(player)
+	-- Verificar con la API de Roblox
+	local success, ownsPass = pcall(function()
+		return MarketplaceService:UserOwnsGamePassAsync(player.UserId, X2_WINS_GAMEPASS_ID)
+	end)
+
+	if success then
+		gamePassCache[player.UserId] = ownsPass
+		return ownsPass
+	else
+		warn("[WinsSystem] Error al verificar GamePass:", ownsPass)
+		return false
+	end
 end
 
 -- Configura cada zona de win
@@ -91,53 +104,49 @@ local function SetupZone(zona)
 			-- Activar cooldown temporalmente
 			cooldowns[player] = true
 
-			-- Verificar si la zona es premium
-			local isPremium = zona:GetAttribute("IsPremium") or false
-			local winsAmount = zona:GetAttribute("Wins") or 1
+			-- Obtener cantidad de wins base
+			local baseWins = zona:GetAttribute("Wins") or 1
 
-			if isPremium then
-				if X2_WINS_PRODUCT_ID == 0 then
-					warn("[WinsSystem] ⚠️ X2_WINS_PRODUCT_ID no está configurado!")
-					task.wait(1)
-					cooldowns[player] = nil
-					return
-				end
+			-- Verificar si tiene el GamePass x2 Wins
+			local hasX2Pass = PlayerHasX2Wins(player)
+			local finalWins = baseWins
 
-				print("💎 " .. player.Name .. " tocó zona premium - Mostrando prompt de compra")
-
-				-- Guardar la cantidad de wins para cuando compre
-				pendingPurchases[player.UserId] = winsAmount
-
-				-- Mostrar prompt de compra
-				task.spawn(function()
-					local success, err = pcall(function()
-						MarketplaceService:PromptProductPurchase(player, X2_WINS_PRODUCT_ID)
-					end)
-
-					if not success then
-						warn("[WinsSystem] Error al mostrar prompt de compra:", err)
-					end
-				end)
-
-				-- Liberar cooldown rápido
-				task.wait(1)
-				cooldowns[player] = nil
+			if hasX2Pass then
+				finalWins = baseWins * 2
+				print("🌟 " .. player.Name .. " tiene x2 Wins GamePass! " .. baseWins .. " → " .. finalWins)
 			else
-				-- Zona normal - dar wins directamente
-				DataManager.AddStat(player, "Wins", winsAmount)
-				print("🏆 " .. player.Name .. " recibió " .. winsAmount .. " Win(s)!")
+				-- Si no tiene el GamePass y aún no le hemos notificado
+				if not notifiedPlayers[player.UserId] then
+					notifiedPlayers[player.UserId] = true
 
-				-- Teletransportar al Spawn
-				TeleportToSpawn(player)
+					-- Enviar notificación al cliente
+					local ReplicatedStorage = game:GetService("ReplicatedStorage")
+					local remoteEvents = ReplicatedStorage:FindFirstChild("RemoteEvents")
+					if remoteEvents then
+						local notifyEvent = remoteEvents:FindFirstChild("NotifyX2WinsAvailable")
+						if notifyEvent then
+							notifyEvent:FireClient(player, baseWins)
+						end
+					end
 
-				-- Liberar cooldown
-				task.wait(2)
-				cooldowns[player] = nil
+					print("💡 Notificado a " .. player.Name .. " sobre x2 Wins GamePass")
+				end
 			end
+
+			-- Dar Wins
+			DataManager.AddStat(player, "Wins", finalWins)
+			print("🏆 " .. player.Name .. " recibió " .. finalWins .. " Win(s)!")
+
+			-- Teletransportar al Spawn
+			TeleportToSpawn(player)
+
+			-- Liberar cooldown
+			task.wait(2)
+			cooldowns[player] = nil
 		end
 	end)
 
-	print("[WinsSystem] ✓ Zona configurada:", zona.Name, "| Wins:", zona:GetAttribute("Wins") or 1, "| Premium:", zona:GetAttribute("IsPremium") or false)
+	print("[WinsSystem] ✓ Zona configurada:", zona.Name, "| Wins base:", zona:GetAttribute("Wins") or 1)
 end
 
 -- ========== INICIALIZACIÓN ==========
@@ -155,14 +164,10 @@ CollectionService:GetInstanceRemovedSignal(TAG_WIN_ZONE):Connect(function(zona)
 	print("[WinsSystem] ⚠️ Tag removido de:", zona.Name)
 end)
 
--- Función global para obtener wins pendientes (usada por MarketplaceManager)
-function _G.GetPendingWins(userId)
-	return pendingPurchases[userId]
-end
-
--- Función global para limpiar wins pendientes
-function _G.ClearPendingWins(userId)
-	pendingPurchases[userId] = nil
-end
+-- Limpiar cache cuando un jugador se va
+Players.PlayerRemoving:Connect(function(player)
+	gamePassCache[player.UserId] = nil
+	notifiedPlayers[player.UserId] = nil
+end)
 
 print("[WinsSystem] ✓ Sistema inicializado - Tag:", TAG_WIN_ZONE)

@@ -98,3 +98,30 @@ end
 updateSettings.OnServerEvent:Connect(function(player, settings)
 	DataManager.UpdateSettings(player, settings)
 end)
+
+-- Crea el RemoteEvent para notificar sobre GamePass x2 Wins
+local notifyX2WinsAvailable = remoteEventsFolder:FindFirstChild("NotifyX2WinsAvailable")
+if not notifyX2WinsAvailable then
+	notifyX2WinsAvailable = Instance.new("RemoteEvent")
+	notifyX2WinsAvailable.Name = "NotifyX2WinsAvailable"
+	notifyX2WinsAvailable.Parent = remoteEventsFolder
+	print("✅ RemoteEvent 'NotifyX2WinsAvailable' creado")
+end
+
+-- Crea el RemoteEvent para comprar GamePass x2 Wins
+local promptX2WinsPurchase = remoteEventsFolder:FindFirstChild("PromptX2WinsPurchase")
+if not promptX2WinsPurchase then
+	promptX2WinsPurchase = Instance.new("RemoteEvent")
+	promptX2WinsPurchase.Name = "PromptX2WinsPurchase"
+	promptX2WinsPurchase.Parent = remoteEventsFolder
+	print("✅ RemoteEvent 'PromptX2WinsPurchase' creado")
+end
+
+-- Crea el RemoteEvent para notificar respawn gratis
+local notifyFreeRespawn = remoteEventsFolder:FindFirstChild("NotifyFreeRespawn")
+if not notifyFreeRespawn then
+	notifyFreeRespawn = Instance.new("RemoteEvent")
+	notifyFreeRespawn.Name = "NotifyFreeRespawn"
+	notifyFreeRespawn.Parent = remoteEventsFolder
+	print("✅ RemoteEvent 'NotifyFreeRespawn' creado")
+end

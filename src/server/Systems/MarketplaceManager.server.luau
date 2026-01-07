@@ -2,7 +2,21 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local DataManager = require(script.Parent.Parent.Data.DataManager)
 
--- Configuración de TODOS los productos (Multiplicadores, EXP, y Premium Wins)
+--[[
+	═══════════════════════════════════════════════════════════════════════
+	GAMEPASSES (No necesitan ProcessReceipt)
+	═══════════════════════════════════════════════════════════════════════
+
+	x2 Wins GamePass:
+	- ID configurado en WinsSystem.server.luau (línea 29)
+	- Se verifica con MarketplaceService:UserOwnsGamePassAsync()
+	- Multiplica TODAS las wins por 2 automáticamente
+	- No necesita estar en esta lista de productos
+
+	═══════════════════════════════════════════════════════════════════════
+]]
+
+-- Configuración de TODOS los productos Developer Products (consumibles)
 local PRODUCTOS = {
 	-- [[ MULTIPLICADORES (Mejoras permanentes) ]] --
 	[3499797343] = { Type = "Multiplier", Value = 2 },
@@ -27,9 +41,6 @@ local PRODUCTOS = {
 	[3503499104] = { Type = "Track", Value = 5 },  -- Zona x5
 	[3503499344] = { Type = "Track", Value = 9 },  -- Zona x9
 	[3503499623] = { Type = "Track", Value = 25 }, -- Zona x25
-
-	-- [[ PREMIUM WINS (Consumible - compra única por zona) ]] --
-	[3505110469] = { Type = "PremiumWins" },  -- ⚠️ REEMPLAZAR 0 CON PRODUCT ID REAL
 }
 
 local function ProcessReceipt(receiptInfo)
@@ -79,29 +90,6 @@ local function ProcessReceipt(receiptInfo)
 			DataManager.UnlockTrack(player, data.Value)
 			print("✅ Zona x" .. data.Value .. " comprada permanentemente.")
 			return Enum.ProductPurchaseDecision.PurchaseGranted
-
-		-- LOGICA PARA PREMIUM WINS (Zonas que requieren compra cada vez)
-		elseif data.Type == "PremiumWins" then
-			-- Obtener wins pendientes desde WinsSystem
-			local winsAmount = _G.GetPendingWins and _G.GetPendingWins(receiptInfo.PlayerId)
-
-			if winsAmount and winsAmount > 0 then
-				-- Dar wins usando la función global
-				if _G.GivePremiumWins then
-					_G.GivePremiumWins(player, winsAmount)
-				end
-
-				-- Limpiar wins pendientes
-				if _G.ClearPendingWins then
-					_G.ClearPendingWins(receiptInfo.PlayerId)
-				end
-
-				print("✅ Premium Wins comprado: +" .. winsAmount .. " Wins")
-				return Enum.ProductPurchaseDecision.PurchaseGranted
-			else
-				warn("[MarketplaceManager] No hay wins pendientes para el jugador:", player.Name)
-				return Enum.ProductPurchaseDecision.NotProcessedYet
-			end
 		end
 
 	end

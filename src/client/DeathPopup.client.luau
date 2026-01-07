@@ -81,6 +81,7 @@ end)
 local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local showDeathPopupEvent = remoteEvents:WaitForChild("ShowDeathPopup")
 local teleportToCheckpointEvent = remoteEvents:WaitForChild("TeleportToCheckpoint")
+local notifyFreeRespawnEvent = remoteEvents:WaitForChild("NotifyFreeRespawn")
 
 -- Evento: Mostrar botón de checkpoint
 showDeathPopupEvent.OnClientEvent:Connect(function(checkpointData)
@@ -93,6 +94,22 @@ teleportToCheckpointEvent.OnClientEvent:Connect(function()
 	print("✅ Compra exitosa, teleportando")
 	teleportToCheckpointEvent:FireServer()
 	checkpointButton.Visible = false
+end)
+
+-- Evento: Notificación de respawn gratis (GamePass holders)
+notifyFreeRespawnEvent.OnClientEvent:Connect(function(checkpointName)
+	print("🌟 [CheckpointButton] Respawn gratis - Checkpoint:", checkpointName)
+
+	-- Mostrar notificación de Roblox
+	local StarterGui = game:GetService("StarterGui")
+	pcall(function()
+		StarterGui:SetCore("SendNotification", {
+			Title = "🌟 Free Respawn!",
+			Text = "x2 Wins GamePass: Teleported to " .. checkpointName .. " for FREE!",
+			Duration = 5,
+			Icon = "rbxassetid://6031229361", -- Icono de monedas
+		})
+	end)
 end)
 
 print("[CheckpointButton] ✅ Sistema inicializado")
