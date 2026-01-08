@@ -30,7 +30,9 @@ local function SetupEquipZone(zona)
 			return 
 		end
 		
-		local winsRequeridas = equipType * 100
+		-- Tabla de victorias requeridas por equipType (1 a 8)
+		local winsPorEquipType = {0, 3, 15, 75, 400, 2000, 10000, 40000}
+		local winsRequeridas = winsPorEquipType[equipType] or 0
 		local currentWins = DataManager.GetStat(player, "Wins") or 0
 		local currentEquip = DataManager.GetStat(player, "EquipType") or 1
 		
