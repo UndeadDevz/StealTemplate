@@ -35,7 +35,6 @@ end)
 -- ========== CONFIGURACIÓN ==========
 local ID_LOW  = "rbxassetid://96527617819964" -- Sonido grave/pesado
 local ID_MED  = "rbxassetid://75711152458818" -- Sonido de aceleración media
-local ID_HIGH = "rbxassetid://92379305033455" -- Sonido agudo/escape
 
 local VEL_MAX = 300     -- Velocidad máxima del coche
 local ACELERACION = 10   -- Qué tan rápido sube el sonido (menor = más pesado)
@@ -70,10 +69,8 @@ end
 
 local sLow  = crearCapa("LowLayer", ID_LOW)
 local sMed  = crearCapa("MedLayer", ID_MED)
-local sHigh = crearCapa("HighLayer", ID_HIGH)
 
 local rpmVirtual = 0 -- Nuestra variable mágica
-local humanoid = character:WaitForChild("Humanoid")
 
 RunService.RenderStepped:Connect(function(dt)
 	-- 1. OBTENER VELOCIDAD REAL
@@ -95,11 +92,9 @@ RunService.RenderStepped:Connect(function(dt)
 	-- 3. MEZCLA DE CAPAS (Cross-fading)
 	sLow.Volume = math.clamp(1 - (rpmVirtual * 2.5), 0, 0.7) * volumeMultiplier
 	sMed.Volume = math.sin(rpmVirtual * math.pi) * 0.8 * volumeMultiplier
-	sHigh.Volume = math.clamp((rpmVirtual - 0.4) * 2, 0, 0.8) * volumeMultiplier
 
 	-- 4. VARIACIÓN DE PITCH (Tono)
 	local pitchBase = math.clamp(0.75 + (rpmVirtual * 0.75), 0.75, PITCH_MAX)
 	sLow.PlaybackSpeed = pitchBase
 	sMed.PlaybackSpeed = pitchBase
-	sHigh.PlaybackSpeed = pitchBase
 end)

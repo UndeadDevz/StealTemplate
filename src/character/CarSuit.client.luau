@@ -41,7 +41,7 @@ local ANGULO_GIRO_VOLANTE = 45
 local VELOCIDAD_GIRO = 10
 
 -- Altura del auto (ajusta este valor para subir o bajar el coche)
-local ALTURA_AUTO = 0.2 -- Aumenta para subir, disminuye para bajar
+local ALTURA_AUTO = 0.8 -- Aumenta para subir, disminuye para bajar
 
 -- Animaciones
 local ANIM_IDLE = "rbxassetid://72471066577154"
@@ -347,15 +347,26 @@ if backLeftTire then
 end
 -- ========================================================
 
--- Soldar TODAS las partes del conductor a la carrocería
+
+-- Soldar TODAS las partes del conductor a la carrocería y desactivar colisiones
+
+-- Soldar TODAS las partes del conductor a la carrocería y desactivar colisiones/touch
 for _, parte in pairs(conductor:GetDescendants()) do
 	if parte:IsA("BasePart") then
+		parte.CanCollide = false
 		local weld = Instance.new("WeldConstraint")
 		weld.Part0 = carroceria
 		weld.Part1 = parte
 		weld.Parent = carroceria
 	end
 end
+
+-- Listener para nuevas partes añadidas al conductor
+conductor.DescendantAdded:Connect(function(descendant)
+	if descendant:IsA("BasePart") then
+		descendant.CanCollide = false
+	end
+end)
 
 -- Guardar offset del volante respecto al coche (solo si existe)
 local volanteOffset = nil

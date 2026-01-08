@@ -23,7 +23,7 @@ local localPlayer = Players.LocalPlayer
 -- ========== CONFIGURACIÓN ==========
 local NOMBRE_COCHE_DEFAULT = "CocheMesh"
 
-local ALTURA_AUTO = 0.2
+local ALTURA_AUTO = 0.8
 local RADIO_RUEDA = 1
 
 -- Animaciones
@@ -316,15 +316,28 @@ local function crearCocheParaOtroJugador(player, character)
 		end
 	end
 
-	-- Soldar todas las partes del conductor a la carrocería
+
+	-- Soldar todas las partes del conductor a la carrocería y desactivar colisiones/touch/query
 	for _, parte in pairs(conductor:GetDescendants()) do
 		if parte:IsA("BasePart") then
+			parte.CanCollide = false
+			parte.CanTouch = false
+			parte.CanQuery = false
 			local weld = Instance.new("WeldConstraint")
 			weld.Part0 = carroceria
 			weld.Part1 = parte
 			weld.Parent = carroceria
 		end
 	end
+
+	-- Listener para nuevas partes añadidas al conductor
+	conductor.DescendantAdded:Connect(function(descendant)
+		if descendant:IsA("BasePart") then
+			descendant.CanCollide = false
+			descendant.CanTouch = false
+			descendant.CanQuery = false
+		end
+	end)
 
 	-- Copiar apariencia al conductor
 	local function copiarApariencia()
