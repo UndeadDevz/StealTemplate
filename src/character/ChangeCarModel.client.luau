@@ -15,8 +15,9 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Importar módulos del sistema híbrido
-local CarConfigs = require(ReplicatedStorage.CarConfigs)
-local CarCustomizationUtils = require(ReplicatedStorage.CarCustomizationUtils)
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local CarConfigs = require(Shared:WaitForChild("CarConfigs"))
+local CarCustomizationUtils = require(Shared:WaitForChild("CarCustomizationUtils"))
 
 local player = Players.LocalPlayer
 local character = script.Parent
@@ -26,17 +27,17 @@ local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local changeCarModel = remoteEvents:WaitForChild("ChangeCarModel")
 
 -- ═══════════════════════════════════════════════════════════════════════
--- OBTENER EQUIPTYPE ACTUAL
+-- CACHÉ LOCAL DEL EQUIPTYPE ACTUAL
 -- ═══════════════════════════════════════════════════════════════════════
-local function getCurrentEquipType()
-	local leaderstats = player:FindFirstChild("leaderstats")
-	if leaderstats then
-		local equipTypeStat = leaderstats:FindFirstChild("EquipType")
-		if equipTypeStat then
-			return equipTypeStat.Value
-		end
+-- Inicializar desde leaderstats si existe, sino usar default
+local currentEquipTypeCache = 1
+local leaderstats = player:WaitForChild("leaderstats", 5)
+if leaderstats then
+	local equipTypeStat = leaderstats:FindFirstChild("EquipType")
+	if equipTypeStat then
+		currentEquipTypeCache = equipTypeStat.Value
+		print("[ChangeCarModel] EquipType inicial: " .. currentEquipTypeCache)
 	end
-	return 1 -- Default
 end
 
 -- ═══════════════════════════════════════════════════════════════════════
@@ -49,21 +50,19 @@ changeCarModel.OnClientEvent:Connect(function(targetPlayer, newEquipType)
 		return
 	end
 
-	local currentEquipType = getCurrentEquipType()
-
-	-- Verificar si ya tiene este EquipType equipado
-	if currentEquipType == newEquipType then
+	-- Verificar si ya tiene este EquipType equipado (usando caché local)
+	if currentEquipTypeCache == newEquipType then
 		print("[ChangeCarModel] Ya tienes equipado EquipType " .. newEquipType)
 		return
 	end
 
-	print("[ChangeCarModel] Cambiando de EquipType " .. currentEquipType .. " → " .. newEquipType)
+	print("[ChangeCarModel] Cambiando de EquipType " .. currentEquipTypeCache .. " → " .. newEquipType)
 
 	-- ═══════════════════════════════════════════════════════════════════
 	-- DECISIÓN: ¿Requiere cambio de modelo o solo texturas?
 	-- ═══════════════════════════════════════════════════════════════════
 	local requiresReload = CarCustomizationUtils.RequiresModelChange(
-		currentEquipType,
+		currentEquipTypeCache,
 		newEquipType,
 		CarConfigs
 	)
@@ -83,6 +82,9 @@ changeCarModel.OnClientEvent:Connect(function(targetPlayer, newEquipType)
 		-- Guardar el nuevo EquipType para que CarSuit lo use al respawnear
 		_G.CurrentCarEquipType = newEquipType
 
+		-- Actualizar caché local
+		currentEquipTypeCache = newEquipType
+
 		-- Recargar personaje para aplicar el nuevo modelo
 		player:LoadCharacter()
 	else
@@ -100,6 +102,7 @@ changeCarModel.OnClientEvent:Connect(function(targetPlayer, newEquipType)
 				_G.RespawnPosition = humanoidRootPart.Position
 			end
 			_G.CurrentCarEquipType = newEquipType
+			currentEquipTypeCache = newEquipType
 			player:LoadCharacter()
 			return
 		end
@@ -108,6 +111,8 @@ changeCarModel.OnClientEvent:Connect(function(targetPlayer, newEquipType)
 		local success = _G.ChangeCarTextures(newEquipType)
 
 		if success then
+			-- Actualizar caché local
+			currentEquipTypeCache = newEquipType
 			print("[ChangeCarModel] ✓ Texturas cambiadas exitosamente")
 		else
 			warn("[ChangeCarModel] ⚠ Error cambiando texturas, recargando personaje")
@@ -117,6 +122,7 @@ changeCarModel.OnClientEvent:Connect(function(targetPlayer, newEquipType)
 				_G.RespawnPosition = humanoidRootPart.Position
 			end
 			_G.CurrentCarEquipType = newEquipType
+			currentEquipTypeCache = newEquipType
 			player:LoadCharacter()
 		end
 	end

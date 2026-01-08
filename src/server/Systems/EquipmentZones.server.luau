@@ -37,7 +37,7 @@ local function SetupEquipZone(zona)
 		-- 2. Verificar lógica
 		if currentEquip == equipType then
 			-- Ya lo tiene equipado
-			-- (Opcional: print("Ya tienes equipado este multiplicador"))
+			print("ℹ️ " .. player.Name .. " ya tiene equipado EquipType " .. equipType)
 		elseif currentWins >= winsRequeridas then
 			-- TIENE SUFICIENTES WINS: Equipar
 			DataManager.UpdateStat(player, "EquipType", equipType)

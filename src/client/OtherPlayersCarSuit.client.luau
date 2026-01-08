@@ -14,8 +14,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 -- Importar módulos del sistema híbrido
-local CarConfigs = require(ReplicatedStorage.CarConfigs)
-local CarCustomizationUtils = require(ReplicatedStorage.CarCustomizationUtils)
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local CarConfigs = require(Shared:WaitForChild("CarConfigs"))
+local CarCustomizationUtils = require(Shared:WaitForChild("CarCustomizationUtils"))
 
 local localPlayer = Players.LocalPlayer
 
