@@ -1,8 +1,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataManager = require(script.Parent.Parent.Data.DataManager)
-
-local CARPETA_EQUIPO = "ZonasEquipo"
+local CollectionService = game:GetService("CollectionService")
 
 -- Esperar al RemoteEvent
 local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
@@ -60,13 +59,23 @@ local function SetupEquipZone(zona)
 	end)
 end
 
--- Inicialización
-local folder = workspace:FindFirstChild(CARPETA_EQUIPO)
-if folder then
-	for _, child in pairs(folder:GetChildren()) do
-		SetupEquipZone(child)
+
+-- Define el nombre de la etiqueta que usarás en el Tag Editor
+local TAG_ZONA_EQUIPO = "EquipZone"
+
+-- Función para inicializar cada zona
+local function onInstanceAdded(instance)
+	if instance:IsA("BasePart") then
+		SetupEquipZone(instance)
 	end
-	folder.ChildAdded:Connect(SetupEquipZone)
-else
-	warn("⚠️ Crea la carpeta '" .. CARPETA_EQUIPO .. "' en Workspace con tus partes.")
 end
+
+-- 1. Buscar las que ya existen en el juego al iniciar
+for _, instance in pairs(CollectionService:GetTagged(TAG_ZONA_EQUIPO)) do
+	onInstanceAdded(instance)
+end
+
+-- 2. Escuchar por si se crean nuevas zonas o se les agrega el tag en tiempo de ejecución
+CollectionService:GetInstanceAddedSignal(TAG_ZONA_EQUIPO):Connect(onInstanceAdded)
+
+print("✅ Sistema de etiquetas activado para: " .. TAG_ZONA_EQUIPO)
