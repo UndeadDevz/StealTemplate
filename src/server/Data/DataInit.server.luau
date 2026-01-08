@@ -2,6 +2,9 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
+local DataStoreService = game:GetService("DataStoreService")
+local WinsLeaderboardStore = DataStoreService:GetOrderedDataStore("GlobalWins_v1")
+local SpeedLeaderboardStore = DataStoreService:GetOrderedDataStore("GlobalSpeed_v1")
 
 --ProfileStore
 local ProfileStore = require(ServerScriptService.Libraries:WaitForChild("ProfileStore"))
@@ -127,6 +130,11 @@ Players.PlayerRemoving:Connect(function(player)
 	if not profile then
 		return
 	end
+	pcall(function()
+		WinsLeaderboardStore:SetAsync(player.UserId, profile.Data.Wins)
+		SpeedLeaderboardStore:SetAsync(player.UserId, profile.Data.TotalEXP) 
+	end)
+
 	profile:EndSession()
 	DataManager.Profiles[player] = nil
 end)
