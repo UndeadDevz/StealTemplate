@@ -62,10 +62,6 @@ local function Initialize(player: Player, profile: typeof(PlayerStore:StartSessi
 	Wins.Name = "Wins"
 	Wins.Value = profile.Data.Wins
 
-	local EquipType = Instance.new("IntValue", leaderstats)
-	EquipType.Name = "EquipType"
-	EquipType.Value = profile.Data.EquipType
-
 	local Speed = Instance.new("NumberValue", leaderstats)
 	Speed.Name = "Speed"
 	Speed.Value = profile.Data.TotalEXP

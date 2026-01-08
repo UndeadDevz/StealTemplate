@@ -66,7 +66,7 @@ function DataManager.UpdateStat(player: Player, statName: string, newValue: any)
 	profile.Data[statName] = newValue
 
 	-- Actualizar leaderstats si existe
-	if statName == "EXP" or statName == "Level" or statName == "Rebirths" or statName == "Wins" or statName == "Multiplier" or statName == "EquipType" then
+	if statName == "EXP" or statName == "Level" or statName == "Rebirths" or statName == "Wins" or statName == "Multiplier" then
 		local ls = player:FindFirstChild("leaderstats")
 		if ls then
 			local statObj = ls:FindFirstChild(statName)

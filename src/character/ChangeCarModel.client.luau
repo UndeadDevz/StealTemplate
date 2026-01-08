@@ -29,16 +29,9 @@ local changeCarModel = remoteEvents:WaitForChild("ChangeCarModel")
 -- ═══════════════════════════════════════════════════════════════════════
 -- CACHÉ LOCAL DEL EQUIPTYPE ACTUAL
 -- ═══════════════════════════════════════════════════════════════════════
--- Inicializar desde leaderstats si existe, sino usar default
-local currentEquipTypeCache = 1
-local leaderstats = player:WaitForChild("leaderstats", 5)
-if leaderstats then
-	local equipTypeStat = leaderstats:FindFirstChild("EquipType")
-	if equipTypeStat then
-		currentEquipTypeCache = equipTypeStat.Value
-		print("[ChangeCarModel] EquipType inicial: " .. currentEquipTypeCache)
-	end
-end
+-- El servidor es la fuente de verdad. Solo actualizamos este valor cuando
+-- el servidor nos notifica un cambio exitoso.
+local currentEquipTypeCache = nil  -- nil = aún no inicializado
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- HANDLER DE CAMBIO DE EQUIPTYPE
@@ -50,7 +43,15 @@ changeCarModel.OnClientEvent:Connect(function(targetPlayer, newEquipType)
 		return
 	end
 
-	-- Verificar si ya tiene este EquipType equipado (usando caché local)
+	-- Si es la primera vez, inicializar el caché
+	if currentEquipTypeCache == nil then
+		currentEquipTypeCache = newEquipType
+		print("[ChangeCarModel] EquipType inicial del servidor: " .. newEquipType)
+		-- No hacer nada más en la primera notificación, solo inicializar
+		return
+	end
+
+	-- Verificar si ya tiene este EquipType equipado
 	if currentEquipTypeCache == newEquipType then
 		print("[ChangeCarModel] Ya tienes equipado EquipType " .. newEquipType)
 		return
@@ -82,7 +83,7 @@ changeCarModel.OnClientEvent:Connect(function(targetPlayer, newEquipType)
 		-- Guardar el nuevo EquipType para que CarSuit lo use al respawnear
 		_G.CurrentCarEquipType = newEquipType
 
-		-- Actualizar caché local
+		-- Actualizar caché local ANTES de recargar
 		currentEquipTypeCache = newEquipType
 
 		-- Recargar personaje para aplicar el nuevo modelo
@@ -111,7 +112,7 @@ changeCarModel.OnClientEvent:Connect(function(targetPlayer, newEquipType)
 		local success = _G.ChangeCarTextures(newEquipType)
 
 		if success then
-			-- Actualizar caché local
+			-- Actualizar caché local solo si tuvo éxito
 			currentEquipTypeCache = newEquipType
 			print("[ChangeCarModel] ✓ Texturas cambiadas exitosamente")
 		else
