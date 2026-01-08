@@ -7,7 +7,8 @@
 
 	Dos tipos de configuración:
 
-	1. Type = "Texture": Cambios visuales instantáneos (colores, materiales, texturas)
+	1. Type = "Texture": Cambio de textura UV instantáneo
+	   - Aplica TextureID a todos los MeshParts del auto
 	   - No requiere recargar personaje
 	   - Cambio instantáneo
 
@@ -21,26 +22,7 @@
 -- Tipos TypeScript-style para mejor documentación
 export type TextureConfig = {
 	Type: "Texture",
-
-	-- Propiedades de la carrocería (Body)
-	BodyColor: Color3?,
-	BodyMaterial: Enum.Material?,
-	BodyTextureID: string?,
-	BodyTransparency: number?,
-	BodyReflectance: number?,
-
-	-- Propiedades de los neumáticos (Tire)
-	TireColor: Color3?,
-	TireMaterial: Enum.Material?,
-	TireTextureID: string?,
-
-	-- Propiedades de los rines (Rim)
-	RimColor: Color3?,
-	RimMaterial: Enum.Material?,
-
-	-- Propiedades del volante
-	SteeringWheelColor: Color3?,
-	SteeringWheelMaterial: Enum.Material?,
+	TextureID: string,  -- Asset ID de Roblox (ej: "rbxassetid://123456789")
 }
 
 export type ModelConfig = {
@@ -55,50 +37,31 @@ export type CarConfig = TextureConfig | ModelConfig
 -- ═══════════════════════════════════════════════════════════════════════
 
 local CarConfigs: { [number]: CarConfig } = {
-	-- EquipType 1: Coche rojo básico (Texture)
+	-- EquipType 1: Textura por defecto (vacía o base)
 	[1] = {
 		Type = "Texture",
-		BodyColor = Color3.fromRGB(220, 50, 50),  -- Rojo
-		BodyMaterial = Enum.Material.SmoothPlastic,
-		TireColor = Color3.fromRGB(30, 30, 30),  -- Negro oscuro
-		RimColor = Color3.fromRGB(180, 180, 180),  -- Gris plateado
-		SteeringWheelColor = Color3.fromRGB(40, 40, 40),
+		TextureID = "rbxassetid://82038652466798",  -- Sin textura (usa el material base del modelo)
 	},
 
+	-- EquipType 2: Textura personalizada
 	[2] = {
 		Type = "Texture",
-		BodyTexture= "rbxassetid://126479336931992"
+		TextureID = "rbxassetid://126479336931992",
 	},
 
-	-- EquipType 3: Coche verde con materiales especiales (Texture)
+	-- EquipType 3: Otra textura
 	[3] = {
 		Type = "Texture",
-		BodyColor = Color3.fromRGB(50, 220, 50),  -- Verde brillante
-		BodyMaterial = Enum.Material.Neon,  -- Material neón para efecto brillante
-		TireColor = Color3.fromRGB(10, 10, 10),  -- Negro puro
-		RimColor = Color3.fromRGB(255, 215, 0),  -- Dorado
-		SteeringWheelColor = Color3.fromRGB(255, 215, 0),
+		TextureID = "rbxassetid://135047336608255",  -- Cambia por tu asset ID
 	},
 
-	-- EquipType 4: Coche azul metálico (Texture)
+	-- EquipType 4: Modelo completamente diferente
 	[4] = {
-		Type = "Texture",
-		BodyColor = Color3.fromRGB(50, 100, 255),  -- Azul
-		BodyMaterial = Enum.Material.Metal,
-		BodyReflectance = 0.3,  -- Reflejo metálico
-		TireColor = Color3.fromRGB(50, 50, 50),
-		RimColor = Color3.fromRGB(200, 200, 255),  -- Azul claro
-		SteeringWheelColor = Color3.fromRGB(20, 20, 20),
-	},
-
-	-- EquipType 5: Otro modelo diferente (Model)
-	[5] = {
 		Type = "Model",
-		ModelName = "CocheMesh3",  -- Cambiar al nombre de tu modelo
+		ModelName = "CocheMesh2",  -- Debe existir en ReplicatedStorage
 	},
 
 	-- Agrega más EquipTypes según necesites...
-	-- Puedes mezclar tipos Texture y Model libremente
 }
 
 return CarConfigs

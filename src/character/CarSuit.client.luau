@@ -5,8 +5,8 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
 -- Importar módulos del sistema híbrido
-local CarConfigs = require(ReplicatedStorage.Shared.CarConfigs)
-local CarCustomizationUtils = require(ReplicatedStorage.Shared.CarCustomizationUtils)
+local CarConfigs = require(ReplicatedStorage.CarConfigs)
+local CarCustomizationUtils = require(ReplicatedStorage.CarCustomizationUtils)
 
 local player = Players.LocalPlayer
 local character = script.Parent

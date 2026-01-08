@@ -16,7 +16,6 @@ local bolaTemplate = ServerStorage:WaitForChild("GiantBall") -- La bola guardada
 -- --- BUCLE PRINCIPAL ---
 while true do
 	-- 1. Clonar la bola
-    print('Info', spawner,endPoint, bolaTemplate)
 	local bola = bolaTemplate:Clone()
 	bola.Position = spawner.Position + Vector3.new(0, 5, 0) -- Aparece un poco arriba del spawner
 	bola.Parent = workspace
@@ -40,7 +39,6 @@ while true do
 		
 		-- B) Si toca el final del camino: DESAPARECER
 		if hit == endPoint then
-			print("🗑️ Bola llegó al final, eliminando...")
 			conexion:Disconnect() -- Desconectar evento para ahorrar memoria
 			bola:Destroy()
 		end

@@ -3,11 +3,11 @@
 	CAR CUSTOMIZATION UTILITIES
 	═══════════════════════════════════════════════════════════════════════
 
-	Funciones utilitarias para aplicar configuraciones de texturas/colores
-	a coches existentes sin necesidad de reclonar el modelo completo.
+	Funciones utilitarias para aplicar texturas UV a coches existentes
+	sin necesidad de reclonar el modelo completo.
 
 	Funciones principales:
-	- ApplyTextureConfig: Aplica colores/materiales a un coche existente
+	- ApplyTextureConfig: Aplica TextureID a todos los MeshParts del auto
 	- RequiresModelChange: Determina si un cambio requiere recarga completa
 	- GetModelName: Obtiene el nombre del modelo base para un EquipType
 
@@ -17,32 +17,17 @@
 local CarCustomizationUtils = {}
 
 -- ═══════════════════════════════════════════════════════════════════════
--- FUNCIONES PRIVADAS
--- ═══════════════════════════════════════════════════════════════════════
-
--- Aplica propiedades a una parte con manejo de errores
-local function applyProperties(part: BasePart, properties: { [string]: any })
-	for propName, value in pairs(properties) do
-		if value ~= nil then
-			local success, err = pcall(function()
-				part[propName] = value
-			end)
-			if not success then
-				warn("[CarCustomization] Error aplicando " .. propName .. ": " .. err)
-			end
-		end
-	end
-end
-
--- ═══════════════════════════════════════════════════════════════════════
 -- FUNCIONES PÚBLICAS
 -- ═══════════════════════════════════════════════════════════════════════
 
 --[[
-	Aplica una configuración de textura a un coche existente
+	Aplica una configuración de textura UV a todos los MeshParts de un coche
+
+	IMPORTANTE: Este método aplica el TextureID directamente a las propiedades
+	TextureContent y TextureID del MeshPart, NO crea objetos Texture hijos.
 
 	@param coche Model - El modelo del coche a modificar
-	@param config TextureConfig - La configuración a aplicar
+	@param config TextureConfig - La configuración a aplicar (debe tener Type="Texture")
 	@return boolean - true si se aplicó exitosamente, false si hubo errores
 ]]
 function CarCustomizationUtils.ApplyTextureConfig(coche: Model, config: any): boolean
@@ -62,123 +47,36 @@ function CarCustomizationUtils.ApplyTextureConfig(coche: Model, config: any): bo
 		return false
 	end
 
-	-- ═══════════════════════════════════════════════════════════════════
-	-- 1. APLICAR A CARROCERÍA (Body)
-	-- ═══════════════════════════════════════════════════════════════════
-	local bodyModel = auto:FindFirstChild("Body")
-	if bodyModel then
-		for _, child in pairs(bodyModel:GetDescendants()) do
-			if child:IsA("MeshPart") then
-				local props = {}
-				if config.BodyColor then
-					props.Color = config.BodyColor
-				end
-				if config.BodyMaterial then
-					props.Material = config.BodyMaterial
-				end
-				if config.BodyTransparency then
-					props.Transparency = config.BodyTransparency
-				end
-				if config.BodyReflectance then
-					props.Reflectance = config.BodyReflectance
-				end
-				applyProperties(child, props)
+	local textureID = config.TextureID or ""
+	local aplicados = 0
 
-				-- TextureID requiere crear/modificar un objeto Texture
-				if config.BodyTextureID then
-					local texture = child:FindFirstChildOfClass("Texture")
-					if not texture then
-						texture = Instance.new("Texture")
-						texture.Face = Enum.NormalId.Top
-						texture.Parent = child
-					end
-					texture.Texture = config.BodyTextureID
-				end
+	-- ═══════════════════════════════════════════════════════════════════
+	-- APLICAR TEXTURA A TODOS LOS MESHPARTS DENTRO DE AUTO
+	-- ═══════════════════════════════════════════════════════════════════
+	-- Búsqueda recursiva para encontrar TODOS los MeshParts
+	-- Esto es necesario porque el modelo usa un UV map compartido
+	for _, descendant in pairs(auto:GetDescendants()) do
+		if descendant:IsA("MeshPart") then
+			-- Aplicar TextureID directamente a las propiedades del MeshPart
+			local success, err = pcall(function()
+				descendant.TextureID = textureID
+			end)
+
+			if success then
+				aplicados = aplicados + 1
+			else
+				warn("[CarCustomization] Error aplicando textura a " .. descendant.Name .. ": " .. tostring(err))
 			end
 		end
 	end
 
-	-- ═══════════════════════════════════════════════════════════════════
-	-- 2. APLICAR A RUEDAS (Tires y Rims)
-	-- ═══════════════════════════════════════════════════════════════════
-	local tireModels = {
-		auto:FindFirstChild("FrontLeftTire"),
-		auto:FindFirstChild("FrontRightTire"),
-		auto:FindFirstChild("BackRightTire"),
-		auto:FindFirstChild("BackLelfTire"), -- Nota: tiene typo en el modelo original
-	}
-
-	for _, tireModel in ipairs(tireModels) do
-		if tireModel then
-			local wheelModel = tireModel:FindFirstChild("Wheel")
-			if wheelModel then
-				-- Aplicar a Tire (neumático)
-				if config.TireColor or config.TireMaterial or config.TireTextureID then
-					local tireSubModel = wheelModel:FindFirstChild("Tire")
-					if tireSubModel then
-						for _, meshPart in pairs(tireSubModel:GetDescendants()) do
-							if meshPart:IsA("MeshPart") then
-								local props = {}
-								if config.TireColor then
-									props.Color = config.TireColor
-								end
-								if config.TireMaterial then
-									props.Material = config.TireMaterial
-								end
-								applyProperties(meshPart, props)
-
-								if config.TireTextureID then
-									local texture = meshPart:FindFirstChildOfClass("Texture")
-									if not texture then
-										texture = Instance.new("Texture")
-										texture.Face = Enum.NormalId.Top
-										texture.Parent = meshPart
-									end
-									texture.Texture = config.TireTextureID
-								end
-							end
-						end
-					end
-				end
-
-				-- Aplicar a Rim (rin/llanta)
-				if config.RimColor or config.RimMaterial then
-					local rimModel = wheelModel:FindFirstChild("Rim")
-					if rimModel then
-						for _, meshPart in pairs(rimModel:GetDescendants()) do
-							if meshPart:IsA("MeshPart") then
-								local props = {}
-								if config.RimColor then
-									props.Color = config.RimColor
-								end
-								if config.RimMaterial then
-									props.Material = config.RimMaterial
-								end
-								applyProperties(meshPart, props)
-							end
-						end
-					end
-				end
-			end
-		end
+	if aplicados > 0 then
+		print("[CarCustomization] ✓ Textura aplicada a " .. aplicados .. " MeshParts")
+		return true
+	else
+		warn("[CarCustomization] ⚠ No se aplicó textura a ningún MeshPart")
+		return false
 	end
-
-	-- ═══════════════════════════════════════════════════════════════════
-	-- 3. APLICAR AL VOLANTE
-	-- ═══════════════════════════════════════════════════════════════════
-	local volante = coche:FindFirstChild("Volante", true) -- true = búsqueda recursiva
-	if volante and volante:IsA("MeshPart") then
-		local props = {}
-		if config.SteeringWheelColor then
-			props.Color = config.SteeringWheelColor
-		end
-		if config.SteeringWheelMaterial then
-			props.Material = config.SteeringWheelMaterial
-		end
-		applyProperties(volante, props)
-	end
-
-	return true
 end
 
 --[[
@@ -212,7 +110,7 @@ function CarCustomizationUtils.RequiresModelChange(
 		return oldConfig.ModelName ~= newConfig.ModelName
 	end
 
-	-- Si ambos son Texture, NO requiere recarga
+	-- Si ambos son Texture, NO requiere recarga (cambio instantáneo)
 	return false
 end
 
