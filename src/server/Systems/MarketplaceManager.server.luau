@@ -11,7 +11,6 @@ local DataManager = require(script.Parent.Parent.Data.DataManager)
 	- Configurado en WinsSystem.server.luau y X2WinsGamePassHandler.server.luau
 	- Se verifica con MarketplaceService:UserOwnsGamePassAsync()
 	- Beneficio: Multiplica TODAS las wins por 2 automáticamente
-	- No necesita estar en esta lista de productos
 
 	Multiplicadores GamePasses (STACKEABLES):
 	- x2 Speed (ID: 1661939202) = +2
@@ -24,7 +23,10 @@ local DataManager = require(script.Parent.Parent.Data.DataManager)
 	- x256 Speed (ID: 1661041459) = +256
 	- Configurado en MultiplierGamePassHandler.server.luau
 	- Se suman todos los que tenga el jugador (ej: x2 + x4 = 6x total)
-	- No necesitan estar en esta lista de productos
+
+	ZonasEXP GamePasses:
+	- Zona x3, x5, x9, x25 (IDs configurados en ExpTraining.server.luau)
+	- Se verifican con MarketplaceService:UserOwnsGamePassAsync()
 
 	═══════════════════════════════════════════════════════════════════════
 ]]
@@ -42,12 +44,6 @@ local PRODUCTOS = {
 
 	-- [[ REBIRTH KEEP LEVEL (Consumible) ]] --
 	[3505671943] = { Type = "RebirthKeepLevel", Value = 1 },  -- ⚠️ REEMPLAZAR 0 CON PRODUCT ID REAL
-
-	-- [[ PISTAS DESBLOQUEABLES ]] --
-	[3503497564] = { Type = "Track", Value = 3 },  -- Zona x3
-	[3503499104] = { Type = "Track", Value = 5 },  -- Zona x5
-	[3503499344] = { Type = "Track", Value = 9 },  -- Zona x9
-	[3503499623] = { Type = "Track", Value = 25 }, -- Zona x25
 }
 
 local function ProcessReceipt(receiptInfo)
@@ -101,12 +97,6 @@ local function ProcessReceipt(receiptInfo)
 				warn("[MarketplaceManager] _G.RebirthKeepLevel no está disponible")
 				return Enum.ProductPurchaseDecision.NotProcessedYet
 			end
-
-		-- LOGICA PARA PISTAS DESBLOQUEABLES
-		elseif data.Type == "Track" then
-			DataManager.UnlockTrack(player, data.Value)
-			print("✅ Zona x" .. data.Value .. " comprada permanentemente.")
-			return Enum.ProductPurchaseDecision.PurchaseGranted
 		end
 
 	end
