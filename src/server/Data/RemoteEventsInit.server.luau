@@ -170,3 +170,12 @@ if not changeCarModel then
 	changeCarModel.Parent = remoteEventsFolder
 	print("✅ RemoteEvent 'ChangeCarModel' creado")
 end
+
+-- Crea el RemoteEvent para notificar cambios en Wins
+local winsChanged = remoteEventsFolder:FindFirstChild("WinsChanged")
+if not winsChanged then
+	winsChanged = Instance.new("RemoteEvent")
+	winsChanged.Name = "WinsChanged"
+	winsChanged.Parent = remoteEventsFolder
+	print("✅ RemoteEvent 'WinsChanged' creado")
+end

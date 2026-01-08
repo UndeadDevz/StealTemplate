@@ -135,6 +135,17 @@ local function SetupZone(zona)
 			DataManager.AddStat(player, "Wins", finalWins)
 			print("🏆 " .. player.Name .. " recibió " .. finalWins .. " Win(s)!")
 
+			-- Notificar al cliente sobre el cambio de Wins
+			local ReplicatedStorage = game:GetService("ReplicatedStorage")
+			local remoteEvents = ReplicatedStorage:FindFirstChild("RemoteEvents")
+			if remoteEvents then
+				local winsChangedEvent = remoteEvents:FindFirstChild("WinsChanged")
+				if winsChangedEvent then
+					local currentWins = DataManager.GetStat(player, "Wins")
+					winsChangedEvent:FireClient(player, currentWins)
+				end
+			end
+
 			-- Teletransportar al Spawn
 			TeleportToSpawn(player)
 
