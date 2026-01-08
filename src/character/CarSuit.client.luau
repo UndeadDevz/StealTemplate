@@ -16,13 +16,34 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 local lowerTorso = character:WaitForChild("LowerTorso")
 
 -- ========== OBTENER EQUIPTYPE INICIAL ==========
+local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
+local getStatRemote = remoteEvents:WaitForChild("GetStat")
+
 local function getInitialEquipType()
-	local leaderstats = player:FindFirstChild("leaderstats")
-	if leaderstats then
-		local equipTypeStat = leaderstats:FindFirstChild("EquipType")
-		if equipTypeStat then
-			return equipTypeStat.Value
+	-- Esperar un momento para que el servidor establezca el Attribute
+	local attrValue = player:GetAttribute("EquipType")
+
+	-- Si no está, esperar hasta 3 segundos
+	if not attrValue then
+		local waited = 0
+		while not attrValue and waited < 3 do
+			task.wait(0.1)
+			waited = waited + 0.1
+			attrValue = player:GetAttribute("EquipType")
 		end
+	end
+
+	if attrValue then
+		return attrValue
+	end
+
+	-- Fallback: pedir al servidor directamente
+	local success, result = pcall(function()
+		return getStatRemote:InvokeServer("EquipType")
+	end)
+
+	if success and result then
+		return result
 	end
 	return 1 -- Default
 end

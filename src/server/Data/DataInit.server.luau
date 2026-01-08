@@ -131,9 +131,9 @@ Players.PlayerRemoving:Connect(function(player)
 		return
 	end
 	pcall(function()
-		WinsLeaderboardStore:SetAsync(player.UserId, profile.Data.Wins)
-		SpeedLeaderboardStore:SetAsync(player.UserId, profile.Data.TotalEXP) 
-	end)
+    WinsLeaderboardStore:SetAsync(player.UserId, math.floor(profile.Data.Wins)) 
+    SpeedLeaderboardStore:SetAsync(player.UserId, math.floor(profile.Data.TotalEXP)) 
+end)
 
 	profile:EndSession()
 	DataManager.Profiles[player] = nil

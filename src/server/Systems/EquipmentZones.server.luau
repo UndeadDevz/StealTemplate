@@ -42,6 +42,7 @@ local function SetupEquipZone(zona)
 		elseif currentWins >= winsRequeridas then
 			-- TIENE SUFICIENTES WINS: Equipar
 			DataManager.UpdateStat(player, "EquipType", equipType)
+			player:SetAttribute("EquipType", equipType)
 			print("⚔️ " .. player.Name .. " equipó Multiplicador x" .. equipType .. "!")
 
 			-- Notificar a TODOS los clientes para cambiar modelo/texturas

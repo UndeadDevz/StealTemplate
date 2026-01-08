@@ -166,15 +166,8 @@ local function crearCocheParaOtroJugador(player, character)
 		return
 	end
 
-	-- Obtener EquipType del jugador para usar el modelo correcto
-	local equipType = 1
-	local leaderstats = player:FindFirstChild("leaderstats")
-	if leaderstats then
-		local equipTypeStat = leaderstats:FindFirstChild("EquipType")
-		if equipTypeStat then
-			equipType = equipTypeStat.Value
-		end
-	end
+	-- Obtener EquipType del jugador desde Attribute
+	local equipType = player:GetAttribute("EquipType") or 1
 
 	-- Obtener el nombre del modelo según el EquipType usando el sistema híbrido
 	local nombreCoche = CarCustomizationUtils.GetModelName(equipType, CarConfigs)
