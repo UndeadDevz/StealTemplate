@@ -4,14 +4,38 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
+-- Importar módulos del sistema híbrido
+local CarConfigs = require(ReplicatedStorage.Shared.CarConfigs)
+local CarCustomizationUtils = require(ReplicatedStorage.Shared.CarCustomizationUtils)
+
 local player = Players.LocalPlayer
 local character = script.Parent
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 local lowerTorso = character:WaitForChild("LowerTorso")
 
+-- ========== OBTENER EQUIPTYPE INICIAL ==========
+local function getInitialEquipType()
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local equipTypeStat = leaderstats:FindFirstChild("EquipType")
+		if equipTypeStat then
+			return equipTypeStat.Value
+		end
+	end
+	return 1 -- Default
+end
+
+local equipTypeActual = getInitialEquipType()
+
+-- Si hay un cambio de modelo pendiente por recarga, usar ese
+if _G.CurrentCarEquipType then
+	equipTypeActual = _G.CurrentCarEquipType
+end
+
 -- ========== CONFIGURACIÓN ==========
-local NOMBRE_COCHE = "CocheMesh"
+-- Determinar el modelo base según el EquipType
+local NOMBRE_COCHE = CarCustomizationUtils.GetModelName(equipTypeActual, CarConfigs)
 local ANGULO_GIRO_VOLANTE = 45
 local VELOCIDAD_GIRO = 10
 
@@ -353,6 +377,18 @@ else
 end
 -- ========================================================
 
+-- ========== APLICAR TEXTURAS SEGÚN CONFIG ==========
+local configActual = CarConfigs[equipTypeActual]
+if configActual and configActual.Type == "Texture" then
+	local success = CarCustomizationUtils.ApplyTextureConfig(coche, configActual)
+	if success then
+		print("[CarSuit] ✓ Texturas aplicadas para EquipType " .. equipTypeActual)
+	else
+		warn("[CarSuit] ⚠ Error aplicando texturas para EquipType " .. equipTypeActual)
+	end
+end
+-- ========================================================
+
 -- ========== COPIAR APARIENCIA AL CONDUCTOR ==========
 local function copiarApariencia()
 	local descripcion = humanoid:GetAppliedDescription()
@@ -524,5 +560,47 @@ end)
 player.CharacterRemoving:Connect(function()
 	coche:Destroy()
 end)
+
+-- Teleportar a la posición guardada si existe (cuando se cambió de modelo)
+if _G.RespawnPosition then
+	task.wait(0.1) -- Pequeña espera para asegurar que todo está cargado
+	rootPart.CFrame = CFrame.new(_G.RespawnPosition)
+	_G.RespawnPosition = nil -- Limpiar después de usar
+	print("[CarSuit] ✓ Teleportado a posición guardada")
+end
+
+-- ========== EXPORTAR FUNCIÓN DE CAMBIO DE TEXTURAS ==========
+-- Esta función permite cambiar texturas dinámicamente sin recargar el personaje
+local function changeCarTextures(newEquipType: number)
+	if not coche or not coche.Parent then
+		warn("[CarSuit] No hay coche activo para cambiar texturas")
+		return false
+	end
+
+	local newConfig = CarConfigs[newEquipType]
+	if not newConfig then
+		warn("[CarSuit] Config no encontrada para EquipType " .. newEquipType)
+		return false
+	end
+
+	if newConfig.Type ~= "Texture" then
+		warn("[CarSuit] EquipType " .. newEquipType .. " no es de tipo Texture")
+		return false
+	end
+
+	local success = CarCustomizationUtils.ApplyTextureConfig(coche, newConfig)
+	if success then
+		equipTypeActual = newEquipType
+		print("[CarSuit] ✓ Texturas cambiadas a EquipType " .. newEquipType)
+	else
+		warn("[CarSuit] ⚠ Error cambiando texturas a EquipType " .. newEquipType)
+	end
+
+	return success
+end
+
+_G.ChangeCarTextures = changeCarTextures
+print("[CarSuit] ✓ Función de cambio de texturas exportada")
+-- ========================================================
 
 print("[CarSuit] ✓ Car-Suit listo!")

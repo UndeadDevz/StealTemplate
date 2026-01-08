@@ -13,10 +13,15 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+-- Importar módulos del sistema híbrido
+local CarConfigs = require(ReplicatedStorage.Shared.CarConfigs)
+local CarCustomizationUtils = require(ReplicatedStorage.Shared.CarCustomizationUtils)
+
 local localPlayer = Players.LocalPlayer
 
 -- ========== CONFIGURACIÓN ==========
-local NOMBRE_COCHE = "CocheMesh"
+local NOMBRE_COCHE_DEFAULT = "CocheMesh"
+
 local ALTURA_AUTO = 0.2
 local RADIO_RUEDA = 1
 
@@ -160,8 +165,26 @@ local function crearCocheParaOtroJugador(player, character)
 		return
 	end
 
+	-- Obtener EquipType del jugador para usar el modelo correcto
+	local equipType = 1
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local equipTypeStat = leaderstats:FindFirstChild("EquipType")
+		if equipTypeStat then
+			equipType = equipTypeStat.Value
+		end
+	end
+
+	-- Obtener el nombre del modelo según el EquipType usando el sistema híbrido
+	local nombreCoche = CarCustomizationUtils.GetModelName(equipType, CarConfigs)
+
 	-- Clonar coche
-	local cocheOriginal = ReplicatedStorage:WaitForChild(NOMBRE_COCHE)
+	local cocheOriginal = ReplicatedStorage:FindFirstChild(nombreCoche)
+	if not cocheOriginal then
+		warn("[OtherPlayersCarSuit] ⚠ No se encontró modelo '" .. nombreCoche .. "' en ReplicatedStorage")
+		cocheOriginal = ReplicatedStorage:WaitForChild(NOMBRE_COCHE_DEFAULT)
+	end
+
 	local coche = cocheOriginal:Clone()
 	coche.Name = player.Name .. "_Car"
 	coche.Parent = workspace
@@ -309,6 +332,18 @@ local function crearCocheParaOtroJugador(player, character)
 	end
 
 	pcall(copiarApariencia)
+
+	-- ========== APLICAR TEXTURAS SEGÚN CONFIG ==========
+	local configActual = CarConfigs[equipType]
+	if configActual and configActual.Type == "Texture" then
+		local success = CarCustomizationUtils.ApplyTextureConfig(coche, configActual)
+		if success then
+			print("[OtherPlayersCarSuit] ✓ Texturas aplicadas para " .. player.Name .. " (EquipType " .. equipType .. ")")
+		else
+			warn("[OtherPlayersCarSuit] ⚠ Error aplicando texturas para " .. player.Name)
+		end
+	end
+	-- ========================================================
 
 	-- ========== ANIMACIONES DEL CONDUCTOR ==========
 	local animIdle = Instance.new("Animation")
@@ -484,10 +519,11 @@ local function crearCocheParaOtroJugador(player, character)
 		otherPlayerCars[player.UserId] = nil
 	end)
 
-	-- Guardar referencia
+	-- Guardar referencia (incluir equipType para poder comparar después)
 	otherPlayerCars[player.UserId] = {
 		coche = coche,
-		connection = connection
+		connection = connection,
+		equipType = equipType
 	}
 
 	print("[OtherPlayersCarSuit] ✓ Coche creado para " .. player.Name)
@@ -547,5 +583,103 @@ for _, player in pairs(Players:GetPlayers()) do
 		onPlayerAdded(player)
 	end
 end
+
+-- Escuchar cambios de EquipType de otros jugadores (SISTEMA HÍBRIDO)
+local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
+local changeCarModel = remoteEvents:WaitForChild("ChangeCarModel")
+
+changeCarModel.OnClientEvent:Connect(function(targetPlayer, newEquipType)
+	-- Ignorar si el cambio es para el jugador local
+	if targetPlayer == localPlayer then
+		return
+	end
+
+	print("[OtherPlayersCarSuit] " .. targetPlayer.Name .. " cambió a EquipType " .. newEquipType)
+
+	local playerData = otherPlayerCars[targetPlayer.UserId]
+	if not playerData then
+		-- No tenemos su coche renderizado, ignorar
+		return
+	end
+
+	local currentEquipType = playerData.equipType
+
+	-- Verificar si ya tiene este EquipType
+	if currentEquipType == newEquipType then
+		print("[OtherPlayersCarSuit] " .. targetPlayer.Name .. " ya tiene EquipType " .. newEquipType)
+		return
+	end
+
+	-- ═══════════════════════════════════════════════════════════════════
+	-- DECISIÓN: ¿Requiere cambio de modelo o solo texturas?
+	-- ═══════════════════════════════════════════════════════════════════
+	local requiresReload = CarCustomizationUtils.RequiresModelChange(
+		currentEquipType,
+		newEquipType,
+		CarConfigs
+	)
+
+	if requiresReload then
+		-- ═══════════════════════════════════════════════════════════════
+		-- CASO 1: CAMBIO DE MODELO COMPLETO (destruir y recrear)
+		-- ═══════════════════════════════════════════════════════════════
+		print("[OtherPlayersCarSuit] ⟳ " .. targetPlayer.Name .. " requiere recrear modelo")
+
+		-- Destruir coche actual
+		if playerData.connection then
+			playerData.connection:Disconnect()
+		end
+		if playerData.coche then
+			playerData.coche:Destroy()
+		end
+		otherPlayerCars[targetPlayer.UserId] = nil
+
+		-- Recrear con el nuevo modelo
+		if targetPlayer.Character then
+			task.wait(0.1)
+			crearCocheParaOtroJugador(targetPlayer, targetPlayer.Character)
+		end
+	else
+		-- ═══════════════════════════════════════════════════════════════
+		-- CASO 2: SOLO CAMBIO DE TEXTURAS (instantáneo)
+		-- ═══════════════════════════════════════════════════════════════
+		print("[OtherPlayersCarSuit] ✨ " .. targetPlayer.Name .. " cambio instantáneo de texturas")
+
+		local newConfig = CarConfigs[newEquipType]
+		if not newConfig or newConfig.Type ~= "Texture" then
+			warn("[OtherPlayersCarSuit] ⚠ Config inválida para EquipType " .. newEquipType)
+			return
+		end
+
+		local coche = playerData.coche
+		if not coche or not coche.Parent then
+			warn("[OtherPlayersCarSuit] ⚠ Coche de " .. targetPlayer.Name .. " no existe")
+			return
+		end
+
+		-- Aplicar texturas dinámicamente SIN recrear
+		local success = CarCustomizationUtils.ApplyTextureConfig(coche, newConfig)
+		if success then
+			-- Actualizar el EquipType guardado
+			playerData.equipType = newEquipType
+			print("[OtherPlayersCarSuit] ✓ Texturas de " .. targetPlayer.Name .. " cambiadas exitosamente")
+		else
+			warn("[OtherPlayersCarSuit] ⚠ Error aplicando texturas a " .. targetPlayer.Name .. ", recreando coche")
+			-- Fallback: recrear si falla
+			if playerData.connection then
+				playerData.connection:Disconnect()
+			end
+			if playerData.coche then
+				playerData.coche:Destroy()
+			end
+			otherPlayerCars[targetPlayer.UserId] = nil
+
+			if targetPlayer.Character then
+				task.wait(0.1)
+				crearCocheParaOtroJugador(targetPlayer, targetPlayer.Character)
+			end
+		end
+	end
+end)
 
 print("[OtherPlayersCarSuit] ✓ Sistema inicializado")

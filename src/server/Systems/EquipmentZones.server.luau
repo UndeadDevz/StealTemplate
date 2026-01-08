@@ -1,7 +1,12 @@
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataManager = require(script.Parent.Parent.Data.DataManager)
 
 local CARPETA_EQUIPO = "ZonasEquipo"
+
+-- Esperar al RemoteEvent
+local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
+local changeCarModel = remoteEvents:WaitForChild("ChangeCarModel")
 
 local function SetupEquipZone(zona)
 	if not zona:IsA("BasePart") then return end
@@ -37,7 +42,11 @@ local function SetupEquipZone(zona)
 			-- TIENE SUFICIENTES WINS: Equipar
 			DataManager.UpdateStat(player, "EquipType", equipType)
 			print("⚔️ " .. player.Name .. " equipó Multiplicador x" .. equipType .. "!")
-			
+
+			-- Notificar a TODOS los clientes para cambiar modelo/texturas
+			-- Envía el EquipType, los clientes deciden si recargar o solo cambiar texturas
+			changeCarModel:FireAllClients(player, equipType)
+
 			-- Opcional: Feedback visual (puedes añadir sonido o partículas aquí)
 		else
 			-- NO TIENE SUFICIENTES WINS

@@ -161,3 +161,12 @@ if not expGainedEvent then
 	expGainedEvent.Parent = remoteEventsFolder
 	print("✅ RemoteEvent 'ExpGainedEvent' creado")
 end
+
+-- Crea el RemoteEvent para cambiar el modelo del coche
+local changeCarModel = remoteEventsFolder:FindFirstChild("ChangeCarModel")
+if not changeCarModel then
+	changeCarModel = Instance.new("RemoteEvent")
+	changeCarModel.Name = "ChangeCarModel"
+	changeCarModel.Parent = remoteEventsFolder
+	print("✅ RemoteEvent 'ChangeCarModel' creado")
+end
