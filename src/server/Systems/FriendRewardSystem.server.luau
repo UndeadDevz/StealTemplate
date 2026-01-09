@@ -1,5 +1,5 @@
 local Players = game:GetService("Players")
-local DataManager = require(game:GetService("ServerScriptService").Server.Data.DataManager)
+local DataManager = require(game:GetService("ServerScriptService").Data.DataManager)
 
 -- CONFIGURACIÓN
 local REWARD_EXP = 10000
