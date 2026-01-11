@@ -58,8 +58,6 @@ end
 -- ========== CONFIGURACIÓN ==========
 -- Determinar el modelo base según el EquipType
 local NOMBRE_COCHE = CarCustomizationUtils.GetModelName(equipTypeActual, CarConfigs)
-local ANGULO_GIRO_VOLANTE = 45
-local VELOCIDAD_GIRO = 10
 
 -- Altura del auto (ajusta este valor para subir o bajar el coche)
 local ALTURA_AUTO = 0.8 -- Aumenta para subir, disminuye para bajar
@@ -181,12 +179,6 @@ conductor.Name = player.Name
 local conductorHumanoid = conductor:WaitForChild("Humanoid")
 conductorHumanoid.PlatformStand = true
 local conductorAnimator = conductorHumanoid:WaitForChild("Animator")
-
--- Buscar volante en el coche
-local volante = coche:FindFirstChild("Volante", true) -- true = búsqueda recursiva
-if not volante then
-	warn("[CarSuit] ⚠ No se encontró 'Volante' en el coche (continuando sin volante)")
-end
 
 -- Primero configurar todas las partes como no colisionables
 for _, parte in pairs(coche:GetDescendants()) do
@@ -389,27 +381,6 @@ conductor.DescendantAdded:Connect(function(descendant)
 	end
 end)
 
--- Guardar offset del volante respecto al coche (solo si existe)
-local volanteOffset = nil
-local motorVolante = nil
-
-if volante then
-	volanteOffset = carroceria.CFrame:ToObjectSpace(volante.CFrame)
-
-	-- Motor6D para el volante
-	motorVolante = Instance.new("Motor6D")
-	motorVolante.Name = "VolanteMotor"
-	motorVolante.Part0 = carroceria
-	motorVolante.Part1 = volante
-	motorVolante.C0 = volanteOffset
-	motorVolante.Parent = carroceria
-
-	print("[CarSuit] ✓ Volante conectado")
-else
-	print("[CarSuit] ⚠ Auto sin volante")
-end
--- ========================================================
-
 -- ========== APLICAR TEXTURAS SEGÚN CONFIG ==========
 local configActual = CarConfigs[equipTypeActual]
 if configActual and configActual.Type == "Texture" then
@@ -452,9 +423,6 @@ trackRight.Looped = true
 trackIdle:Play()
 
 -- ========== CONTROL DE INPUT ==========
-local anguloActual = 0
-local anguloObjetivo = 0
-
 local teclas = {
 	izquierda = false,
 	derecha = false
@@ -524,21 +492,11 @@ end
 -- ========== BUCLE PRINCIPAL ==========
 RunService.RenderStepped:Connect(function(dt)
 	if teclas.izquierda and not teclas.derecha then
-		anguloObjetivo = ANGULO_GIRO_VOLANTE
 		actualizarAnimacion("left")
 	elseif teclas.derecha and not teclas.izquierda then
-		anguloObjetivo = -ANGULO_GIRO_VOLANTE
 		actualizarAnimacion("right")
 	else
-		anguloObjetivo = 0
 		actualizarAnimacion("idle")
-	end
-
-	anguloActual = anguloActual + (anguloObjetivo - anguloActual) * dt * VELOCIDAD_GIRO
-
-	-- Actualizar volante solo si existe
-	if motorVolante and volanteOffset then
-		motorVolante.C0 = volanteOffset * CFrame.Angles(0, math.rad(anguloActual), 0)
 	end
 
 	local pitchObjetivo = obtenerPitchSuelo()
