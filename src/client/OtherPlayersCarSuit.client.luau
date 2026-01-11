@@ -32,7 +32,7 @@ local ANIM_LEFT = "rbxassetid://102025087016232"
 local ANIM_RIGHT = "rbxassetid://99169459312919"
 
 -- Sonidos del motor
-local ID_LOW  = "rbxassetid://96527617819964"
+local ID_LOW  = "rbxassetid://113585940003370"
 local ID_MED  = "rbxassetid://75711152458818"
 local ID_HIGH = "rbxassetid://92379305033455"
 local VEL_MAX = 300

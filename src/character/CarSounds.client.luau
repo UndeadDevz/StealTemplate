@@ -33,7 +33,7 @@ end)
 -- ========================================================
 
 -- ========== CONFIGURACIÓN ==========
-local ID_LOW  = "rbxassetid://96527617819964" -- Sonido grave/pesado
+local ID_LOW  = "rbxassetid://113585940003370" -- Sonido grave/pesado
 local ID_MED  = "rbxassetid://75711152458818" -- Sonido de aceleración media
 
 local VEL_MAX = 300     -- Velocidad máxima del coche
