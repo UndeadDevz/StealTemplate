@@ -7,6 +7,7 @@ return {
 	Multiplier = 1,
 	CustomSpeed = 0, -- 0 significa "usar máximo", cualquier otro valor es la velocidad personalizada
 	TotalEXP = 0, -- EXP acumulada total (nunca se resta)
+	GroupRewardClaimed = false, -- true si ya reclamó la recompensa por unirse al grupo
 
 	-- Configuraciones de UI (guardadas persistentemente)
 	Settings = {

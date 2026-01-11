@@ -179,3 +179,68 @@ if not winsChanged then
 	winsChanged.Parent = remoteEventsFolder
 	print("✅ RemoteEvent 'WinsChanged' creado")
 end
+
+-- Crea el RemoteFunction para reclamar recompensa de grupo
+local claimGroupReward = remoteEventsFolder:FindFirstChild("ClaimGroupReward")
+if not claimGroupReward then
+	claimGroupReward = Instance.new("RemoteFunction")
+	claimGroupReward.Name = "ClaimGroupReward"
+	claimGroupReward.Parent = remoteEventsFolder
+	print("✅ RemoteFunction 'ClaimGroupReward' creado")
+end
+
+-- Configuración de recompensa de grupo
+local GROUP_ID = 1035894336
+local GROUP_REWARD_EXP = 10000
+local GroupService = game:GetService("GroupService")
+
+-- Handler para ClaimGroupReward
+-- Retorna: { success: boolean, message: string, alreadyClaimed: boolean, inGroup: boolean }
+claimGroupReward.OnServerInvoke = function(player)
+	local profile = DataManager.Profiles[player]
+	if not profile then
+		return { success = false, message = "Error de datos", alreadyClaimed = false, inGroup = false }
+	end
+
+	-- Verificar si ya reclamó
+	if profile.Data.GroupRewardClaimed then
+		return { success = false, message = "Ya reclamaste esta recompensa", alreadyClaimed = true, inGroup = true }
+	end
+
+	-- Verificar si está en el grupo
+	local inGroup = false
+	local success, result = pcall(function()
+		return player:IsInGroup(GROUP_ID)
+	end)
+
+	if success then
+		inGroup = result
+	end
+
+	if not inGroup then
+		return { success = false, message = "Debes unirte al grupo primero", alreadyClaimed = false, inGroup = false }
+	end
+
+	-- Dar la recompensa (EXP para nivel + TotalEXP para leaderboard)
+	profile.Data.EXP = profile.Data.EXP + GROUP_REWARD_EXP
+	profile.Data.TotalEXP = profile.Data.TotalEXP + GROUP_REWARD_EXP
+	profile.Data.GroupRewardClaimed = true
+
+	-- Actualizar leaderstats
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local speedStat = leaderstats:FindFirstChild("Speed")
+		if speedStat then
+			speedStat.Value = profile.Data.TotalEXP
+		end
+	end
+
+	-- Verificar si sube de nivel
+	local levelsGained = DataManager.CheckLevelUp(player)
+	if levelsGained > 0 then
+		print("✅ " .. player.Name .. " subió " .. levelsGained .. " niveles con la recompensa de grupo!")
+	end
+
+	print("✅ " .. player.Name .. " reclamó recompensa de grupo: " .. GROUP_REWARD_EXP .. " EXP")
+	return { success = true, message = "¡Recibiste " .. GROUP_REWARD_EXP .. " EXP!", alreadyClaimed = false, inGroup = true }
+end
