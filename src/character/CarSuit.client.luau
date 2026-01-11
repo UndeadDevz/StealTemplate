@@ -65,9 +65,9 @@ local VELOCIDAD_GIRO = 10
 local ALTURA_AUTO = 0.8 -- Aumenta para subir, disminuye para bajar
 
 -- Animaciones
-local ANIM_IDLE = "rbxassetid://72471066577154"
-local ANIM_LEFT = "rbxassetid://136541988317425"
-local ANIM_RIGHT = "rbxassetid://88962280420603"
+local ANIM_IDLE = "rbxassetid://94863045736134"
+local ANIM_LEFT = "rbxassetid://102025087016232"
+local ANIM_RIGHT = "rbxassetid://99169459312919"
 
 -- Configuración del Raycast para rampas
 local RAYCAST_DISTANCIA = 10
