@@ -131,10 +131,31 @@ Players.PlayerRemoving:Connect(function(player)
 		return
 	end
 	pcall(function()
-    WinsLeaderboardStore:SetAsync(player.UserId, math.floor(profile.Data.Wins)) 
-    SpeedLeaderboardStore:SetAsync(player.UserId, math.floor(profile.Data.TotalEXP)) 
-end)
+		WinsLeaderboardStore:SetAsync(player.UserId, math.floor(profile.Data.Wins))
+		SpeedLeaderboardStore:SetAsync(player.UserId, math.floor(profile.Data.TotalEXP))
+	end)
 
 	profile:EndSession()
 	DataManager.Profiles[player] = nil
+end)
+
+-- Actualizar OrderedDataStore periódicamente para todos los jugadores
+local LEADERBOARD_UPDATE_INTERVAL = 60 -- segundos
+
+task.spawn(function()
+	while true do
+		task.wait(LEADERBOARD_UPDATE_INTERVAL)
+
+		for _, player in Players:GetPlayers() do
+			local profile = DataManager.Profiles[player]
+			if profile then
+				task.spawn(function()
+					pcall(function()
+						WinsLeaderboardStore:SetAsync(player.UserId, math.floor(profile.Data.Wins))
+						SpeedLeaderboardStore:SetAsync(player.UserId, math.floor(profile.Data.TotalEXP))
+					end)
+				end)
+			end
+		end
+	end
 end)
