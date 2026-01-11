@@ -1,6 +1,6 @@
 local RunService = game:GetService("RunService")
 local character = script.Parent
-local rootPart = character:WaitForChild("HumanoidRootPart")
+local rootPart = character:WaitForChild("HumanoidRootPart", 5)
 
 -- ========== DESHABILITAR SONIDOS DEL HUMANOID ==========
 local function deshabilitarSonidosHumanoid()

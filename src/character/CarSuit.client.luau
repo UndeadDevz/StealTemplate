@@ -11,9 +11,9 @@ local CarCustomizationUtils = require(Shared:WaitForChild("CarCustomizationUtils
 
 local player = Players.LocalPlayer
 local character = script.Parent
-local humanoid = character:WaitForChild("Humanoid")
-local rootPart = character:WaitForChild("HumanoidRootPart")
-local lowerTorso = character:WaitForChild("LowerTorso")
+local humanoid = character:WaitForChild("Humanoid", 5)
+local rootPart = character:WaitForChild("HumanoidRootPart", 5)
+local lowerTorso = character:WaitForChild("LowerTorso", 5)
 
 -- ========== OBTENER EQUIPTYPE INICIAL ==========
 local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")

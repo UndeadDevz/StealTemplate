@@ -157,8 +157,8 @@ local function crearCocheParaOtroJugador(player, character)
 	-- Ocultar el personaje del otro jugador (para nosotros)
 	ocultarPersonaje(character)
 
-	local humanoid = character:WaitForChild("Humanoid")
-	local rootPart = character:WaitForChild("HumanoidRootPart")
+	local humanoid = character:WaitForChild("Humanoid", 5)
+	local rootPart = character:WaitForChild("HumanoidRootPart", 5)
 	local lowerTorso = character:FindFirstChild("LowerTorso")
 
 	if not lowerTorso then
