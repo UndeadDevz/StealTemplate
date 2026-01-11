@@ -39,13 +39,13 @@ local notifiedPlayers = {}
 local function TeleportToSpawn(player)
 	local character = player.Character
 	if character then
-		-- Busca el SpawnLocation por defecto de Roblox
-		local spawn = workspace:FindFirstChild("SpawnLocation")
+		-- Busca cualquier SpawnLocation en el Workspace (recursivo)
+		local spawn = workspace:FindFirstChildOfClass("SpawnLocation", true)
 
 		local targetCFrame
-		if spawn and spawn:IsA("BasePart") then
-			-- Si existe spawn, ir encima de él
-			targetCFrame = spawn.CFrame + Vector3.new(0, 5, 0)
+		if spawn then
+			-- Si existe spawn, ir encima de él mirando en la dirección correcta
+			targetCFrame = spawn.CFrame * CFrame.new(0, 5, 0)
 		else
 			-- Si no hay spawn, ir al centro del mapa
 			targetCFrame = CFrame.new(0, 50, 0)
