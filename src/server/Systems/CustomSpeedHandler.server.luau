@@ -12,8 +12,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataManager = require(script.Parent.Parent.Data.DataManager)
 
--- Configuración
-local BASE_SPEED = 1
+-- Configuración (debe coincidir con el cliente)
+local BASE_SPEED = 4
 
 -- Calcula la velocidad máxima permitida según el nivel
 local function GetMaxSpeed(level: number): number

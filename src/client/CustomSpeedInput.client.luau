@@ -17,7 +17,7 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Configuración
+-- Configuración (debe coincidir con el servidor)
 local BASE_SPEED = 4
 
 -- Esperar al RemoteEvent
