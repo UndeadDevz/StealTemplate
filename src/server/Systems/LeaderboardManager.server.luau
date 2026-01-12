@@ -1,13 +1,18 @@
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 -- 1. IMPORTAR TU FORMATTER
 -- Usamos la misma ruta que en tu script de cliente: ReplicatedStorage > Utils > NumberFormatter
 local NumberFormatter = require(ReplicatedStorage:WaitForChild("Utils"):WaitForChild("NumberFormatter"))
 
-local WinsODS = DataStoreService:GetOrderedDataStore("GlobalWins_v1")
-local SpeedODS = DataStoreService:GetOrderedDataStore("GlobalSpeed_v1")
+-- Detectar entorno: Test (Studio) o Live (Producción)
+local isTestEnvironment = RunService:IsStudio()
+local dataStorePrefix = isTestEnvironment and "Test_" or ""
+
+local WinsODS = DataStoreService:GetOrderedDataStore(dataStorePrefix .. "GlobalWins_v1")
+local SpeedODS = DataStoreService:GetOrderedDataStore(dataStorePrefix .. "GlobalSpeed_v1")
 
 local UPDATE_TIME = 60
 local MAX_ITEMS = 10
