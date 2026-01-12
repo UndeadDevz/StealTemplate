@@ -68,12 +68,13 @@ local function SpawnWings(expAmount)
 	local endPos = UDim2.new(0.5, randomX, 0.5, randomY)
 
 	-- 3. Animación (Mover + Desvanecer + Crecer un poco)
-	local tweenInfo = TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local tweenInfoIcon = TweenInfo.new(3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local tweenInfoText = TweenInfo.new(2.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 	local goalIcon = {
 		Position = endPos,
 		ImageTransparency = 1, -- Desaparece
-		Size = UDim2.new(0, 105, 0, 105), -- Crece un poco al salir (30% más pequeño: 150 -> 105)
+		Size = UDim2.new(0, 105, 0, 105), -- Crece un poco al salir
 	}
 
 	local goalText = {
@@ -81,10 +82,13 @@ local function SpawnWings(expAmount)
 		TextStrokeTransparency = 1,
 	}
 
-	local tweenIcon = TweenService:Create(icon, tweenInfo, goalIcon)
-	local tweenText = TweenService:Create(expText, tweenInfo, goalText)
+	local tweenIcon = TweenService:Create(icon, tweenInfoIcon, goalIcon)
+	local tweenText = TweenService:Create(expText, tweenInfoText, goalText)
 	tweenIcon:Play()
-	tweenText:Play()
+	-- Retrasar el fade del texto para dar más tiempo de lectura
+	task.delay(0.5, function()
+		tweenText:Play()
+	end)
 
 	-- 4. Limpieza automática
 	tweenIcon.Completed:Connect(function()
