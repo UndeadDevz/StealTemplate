@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataManager = require(script.Parent.Parent.Data.DataManager)
+local CarConfigs = require(ReplicatedStorage.Shared.CarConfigs)
 
 -- Esperar al RemoteEvent
 local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
@@ -28,8 +29,10 @@ while true do
 			if humanoid.Health > 0 and humanoid.MoveDirection.Magnitude > 0 then
 				-- [[ LÓGICA DE CÁLCULO - HÍBRIDO ]] --
 
-				-- 1. Obtener Base (EquipType)
-				local baseExp = DataManager.GetStat(player, "EquipType") or 1
+				-- 1. Obtener Base desde CarConfigs
+				local equipType = DataManager.GetStat(player, "EquipType") or 1
+				local carConfig = CarConfigs[equipType]
+				local baseExp = carConfig and carConfig.ExpBase or 1
 
 				-- 2. Obtener Multiplicador de Rebirth
 				local rebirths = DataManager.GetStat(player, "Rebirths") or 0

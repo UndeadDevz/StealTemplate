@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataManager = require(script.Parent.Parent.Data.DataManager)
+local CarConfigs = require(ReplicatedStorage.Shared.CarConfigs)
 
 -- Esperar al RemoteEvent
 local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
@@ -145,7 +146,9 @@ while true do
 				local maxLevel = math.min(25 + (rebirths * 25), 375)
 
 				if level < maxLevel then
-					local baseExp = DataManager.GetStat(player, "EquipType") or 1
+					local equipType = DataManager.GetStat(player, "EquipType") or 1
+					local carConfig = CarConfigs[equipType]
+					local baseExp = carConfig and carConfig.ExpBase or 1
 					local rebirthMult = rebirths * 0.5 + 1
 					local speedMult = DataManager.GetStat(player, "Multiplier") or 1
 					local speedBoost = speedMult - 1
