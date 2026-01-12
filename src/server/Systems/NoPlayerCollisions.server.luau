@@ -1,107 +1,101 @@
 --[[
-	═══════════════════════════════════════════════════════════════════════
 	NO PLAYER COLLISIONS - Desactiva colisiones entre jugadores
-	═══════════════════════════════════════════════════════════════════════
-
-	Este sistema usa la nueva API de CollisionGroup (string) para prevenir
-	que los jugadores colisionen entre sí.
-
-	CÓMO FUNCIONA:
-	- Registra un grupo de colisión llamado "Players"
-	- Configura que este grupo no colisione consigo mismo
-	- Asigna este grupo a todas las partes del personaje usando BasePart.CollisionGroup
-
-	NOTA: Usa las APIs modernas de Roblox (RegisterCollisionGroup + BasePart.CollisionGroup)
-	en lugar de las APIs deprecadas (CreateCollisionGroup + SetPartCollisionGroup)
-
-	═══════════════════════════════════════════════════════════════════════
+	Usa CollisionGroup para que los jugadores no colisionen entre sí
 ]]
 
 local PhysicsService = game:GetService("PhysicsService")
 local Players = game:GetService("Players")
 
--- ========== CONFIGURACIÓN ==========
-local COLLISION_GROUP_NAME = "Players"
--- ===================================
+local COLLISION_GROUP = "Players"
 
--- Registrar grupo de colisión si no existe
-local function registerCollisionGroup()
-	local success, err = pcall(function()
-		PhysicsService:RegisterCollisionGroup(COLLISION_GROUP_NAME)
-	end)
+-- ========== SETUP COLLISION GROUP PRIMERO ==========
+-- Registrar grupo (ignora error si ya existe)
+pcall(function()
+	PhysicsService:RegisterCollisionGroup(COLLISION_GROUP)
+end)
 
-	if not success then
-		-- Si ya existe, no hay problema
-		if not string.find(err, "already") then
-			warn("[NoPlayerCollisions] Error al registrar grupo de colisión:", err)
-			return false
-		end
-	end
+-- Hacer que Players no colisione consigo mismo
+PhysicsService:CollisionGroupSetCollidable(COLLISION_GROUP, COLLISION_GROUP, false)
+print("[NoPlayerCollisions] ✓ CollisionGroup configurado")
 
-	-- Configurar que el grupo "Players" no colisione consigo mismo
-	PhysicsService:CollisionGroupSetCollidable(COLLISION_GROUP_NAME, COLLISION_GROUP_NAME, false)
+-- ========== APLICAR A PERSONAJES ==========
+local function applyCollisionGroup(character)
+	if not character or not character.Parent then return end
 
-	print("[NoPlayerCollisions] ✓ Grupo de colisión configurado:", COLLISION_GROUP_NAME)
-	return true
-end
-
--- Aplicar grupo de colisión a todas las partes del personaje usando la nueva API
-local function setCharacterCollisionGroup(character)
-	for _, part in pairs(character:GetDescendants()) do
+	-- Aplicar a todas las partes existentes
+	for _, part in ipairs(character:GetDescendants()) do
 		if part:IsA("BasePart") then
-			-- Usar la nueva propiedad CollisionGroup (string) en lugar de SetPartCollisionGroup
-			pcall(function()
-				part.CollisionGroup = COLLISION_GROUP_NAME
-			end)
+			part.CollisionGroup = COLLISION_GROUP
 		end
 	end
 end
 
--- Manejar cuando un jugador spawna
-local function onCharacterAdded(character)
-	-- Esperar a que el personaje cargue completamente
-	character:WaitForChild("HumanoidRootPart", 5)
+local function setupCharacter(player, character)
+	-- Esperar a que el personaje esté listo
+	local hrp = character:WaitForChild("HumanoidRootPart", 10)
+	if not hrp then
+		warn("[NoPlayerCollisions] ⚠️ HRP no encontrado para:", player.Name)
+		return
+	end
 
-	-- Aplicar grupo de colisión
-	setCharacterCollisionGroup(character)
+	-- Aplicar inmediatamente
+	applyCollisionGroup(character)
 
-	-- Escuchar nuevas partes que se agreguen al personaje (como accesorios)
-	character.DescendantAdded:Connect(function(descendant)
-		if descendant:IsA("BasePart") then
-			pcall(function()
-				descendant.CollisionGroup = COLLISION_GROUP_NAME
-			end)
+	-- Aplicar de nuevo después de un delay (para partes tardías)
+	task.delay(0.5, function()
+		if character and character.Parent then
+			applyCollisionGroup(character)
 		end
 	end)
 
-	print("[NoPlayerCollisions] ✓ Colisiones desactivadas para:", character.Name)
+	-- Aplicar una vez más después de 1 segundo (por si acaso)
+	task.delay(1, function()
+		if character and character.Parent then
+			applyCollisionGroup(character)
+		end
+	end)
+
+	-- Escuchar nuevas partes (accesorios que se agregan después)
+	character.DescendantAdded:Connect(function(desc)
+		if desc:IsA("BasePart") then
+			desc.CollisionGroup = COLLISION_GROUP
+		end
+	end)
+
+	print("[NoPlayerCollisions] ✓ Aplicado a:", player.Name)
 end
 
--- Manejar cuando un jugador se une
 local function onPlayerAdded(player)
-	-- Manejar personaje actual si existe
+	-- Futuros respawns - conectar PRIMERO
+	player.CharacterAdded:Connect(function(char)
+		task.spawn(setupCharacter, player, char)
+	end)
+
+	-- Personaje actual (si existe)
 	if player.Character then
-		onCharacterAdded(player.Character)
+		task.spawn(setupCharacter, player, player.Character)
 	end
-
-	-- Manejar futuros respawns
-	player.CharacterAdded:Connect(onCharacterAdded)
 end
 
--- ========== INICIALIZACIÓN ==========
-
--- Registrar grupo de colisión
-if not registerCollisionGroup() then
-	warn("[NoPlayerCollisions] ⚠️ No se pudo inicializar el sistema de colisiones")
-	return
-end
-
--- Configurar jugadores actuales
-for _, player in pairs(Players:GetPlayers()) do
-	onPlayerAdded(player)
-end
-
--- Configurar nuevos jugadores
+-- ========== INICIALIZAR ==========
+-- Conectar evento PlayerAdded PRIMERO (antes de iterar)
 Players.PlayerAdded:Connect(onPlayerAdded)
 
-print("[NoPlayerCollisions] ✓ Sistema inicializado - Los jugadores no colisionarán entre sí")
+-- Jugadores que ya existen
+for _, player in ipairs(Players:GetPlayers()) do
+	task.spawn(onPlayerAdded, player)
+end
+
+-- IMPORTANTE: Re-aplicar a TODOS los personajes después de 2 segundos
+-- Esto asegura que jugadores que se unieron muy rápido también tengan el CollisionGroup
+task.delay(2, function()
+	print("[NoPlayerCollisions] 🔄 Re-aplicando a todos los jugadores...")
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player.Character then
+			applyCollisionGroup(player.Character)
+			print("[NoPlayerCollisions] ✓ Re-aplicado a:", player.Name)
+		end
+	end
+end)
+
+print("[NoPlayerCollisions] ✓ Sistema listo")

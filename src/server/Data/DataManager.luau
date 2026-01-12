@@ -65,11 +65,20 @@ function DataManager.UpdateStat(player: Player, statName: string, newValue: any)
 	end
 	profile.Data[statName] = newValue
 
-	-- Actualizar leaderstats si existe
-	if statName == "EXP" or statName == "Level" or statName == "Rebirths" or statName == "Wins" or statName == "Multiplier" then
+	-- Mapeo de stats de datos a nombres de leaderstats
+	local statToLeaderstat = {
+		Level = "Level",
+		Rebirths = "Rebirths",
+		Wins = "Wins",
+		TotalEXP = "Speed", -- TotalEXP se muestra como "Speed" en leaderstats
+	}
+
+	-- Actualizar leaderstats si existe el mapeo
+	local leaderstatName = statToLeaderstat[statName]
+	if leaderstatName then
 		local ls = player:FindFirstChild("leaderstats")
 		if ls then
-			local statObj = ls:FindFirstChild(statName)
+			local statObj = ls:FindFirstChild(leaderstatName)
 			if statObj then
 				statObj.Value = newValue
 			end

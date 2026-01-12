@@ -21,27 +21,17 @@ local function OnPlayerAdded(newPlayer)
         -- Para simplificar, aquí asumimos que queremos premiarlo si está en el juego:
         
         local referrerPlayer = Players:GetPlayerByUserId(referrerId)
-        
+
         if referrerPlayer then
-            local profile = DataManager:Get(referrerPlayer)
-            
+            local profile = DataManager.Profiles[referrerPlayer]
+
             if profile then
-                -- Verificamos si ya cobró por este amigo (igual que antes, para evitar spam)
-                local friendIdKey = tostring(newPlayer.UserId)
-                
-                if not profile.Data.RedeemedFriends[friendIdKey] then
-                    -- 1. Dar Recompensa
-                    profile.Data.TotalEXP += REWARD_EXP
-                    
-                    -- 2. Marcar como cobrado
-                    profile.Data.RedeemedFriends[friendIdKey] = true
-                    
-                    -- 3. Feedback
-                    print("¡Premio entregado a " .. referrerPlayer.Name .. "!")
-                    -- Aquí podrías mandar un RemoteEvent para mostrar un UI de celebración
-                else
-                    warn("El jugador ya había cobrado recompensa por este amigo.")
-                end
+                -- 1. Dar Recompensa usando DataManager para actualizar leaderstats
+                DataManager.AddStat(referrerPlayer, "TotalEXP", REWARD_EXP)
+
+                -- 2. Feedback
+                print("¡Premio entregado a " .. referrerPlayer.Name .. "!")
+                -- Aquí podrías mandar un RemoteEvent para mostrar un UI de celebración
             end
         else
             -- Si el invitador NO está en el servidor, aquí es donde usarías

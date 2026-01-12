@@ -13,6 +13,10 @@ local COLLISION_GROUP = "PoliciaNPC"
 pcall(function()
     PhysicsService:RegisterCollisionGroup(COLLISION_GROUP)
 end)
+-- Asegurar que el grupo "Players" exista antes de configurar colisión
+pcall(function()
+    PhysicsService:RegisterCollisionGroup("Players")
+end)
 pcall(function()
     PhysicsService:CollisionGroupSetCollidable(COLLISION_GROUP, "Players", false)
 end)

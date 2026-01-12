@@ -36,9 +36,15 @@ local TIEMPO_MOVIMIENTO = 0.35
 
 -- Registrar grupo de colisión una sola vez
 local function setupCollisionGroup()
+	-- Registrar grupo de decorativos
 	pcall(function()
 		PhysicsService:RegisterCollisionGroup(COLLISION_GROUP)
 	end)
+	-- Asegurar que el grupo "Players" exista antes de configurar colisión
+	pcall(function()
+		PhysicsService:RegisterCollisionGroup("Players")
+	end)
+	-- Configurar que no colisionen entre sí
 	pcall(function()
 		PhysicsService:CollisionGroupSetCollidable(COLLISION_GROUP, "Players", false)
 	end)
