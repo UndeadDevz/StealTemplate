@@ -75,14 +75,17 @@ end
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- TAG: Conveyor (cinta transportadora)
--- Usa la propiedad Velocity de la Part para empujar físicamente
+-- Usa AssemblyLinearVelocity de forma PASIVA (sin loop)
 -- ATRIBUTOS:
 --   Speed (number): Velocidad del conveyor (default: 20)
 --   Direction (string): "Forward", "Backward", "Left", "Right" (default: "Forward")
 -- ═══════════════════════════════════════════════════════════════════════
 local function configurarConveyor(parte)
 	if not parte:IsA("BasePart") then return end
-	
+
+	-- Anclar la parte para que no se mueva pero transmita velocidad
+	parte.Anchored = true
+
 	local function getDirection()
 		local dir = parte:GetAttribute("Direction") or "Forward"
 		if dir == "Forward" then
@@ -94,15 +97,24 @@ local function configurarConveyor(parte)
 		elseif dir == "Right" then
 			return parte.CFrame.RightVector
 		else
-			return parte.CFrame.LookVector -- Default
+			return parte.CFrame.LookVector
 		end
 	end
-	
-	-- Actualizar velocidad continuamente
-	RunService.Heartbeat:Connect(function()
+
+	local function actualizarVelocidad()
 		local speed = parte:GetAttribute("Speed") or 20
 		local direction = getDirection()
-		parte.Velocity = direction * speed
+		parte.AssemblyLinearVelocity = direction * speed
+	end
+
+	-- Configurar una sola vez
+	actualizarVelocidad()
+
+	-- Solo actualizar si cambian los atributos
+	parte.AttributeChanged:Connect(function(atributo)
+		if atributo == "Speed" or atributo == "Direction" then
+			actualizarVelocidad()
+		end
 	end)
 end
 
