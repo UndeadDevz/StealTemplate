@@ -1,10 +1,21 @@
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
+local PhysicsService = game:GetService("PhysicsService")
 local Workspace = game:GetService("Workspace")
 
 local TAG_NAME = "PoliciaNPC"
 local ZONA = Workspace:WaitForChild("GetOverHere")
 local VELOCIDAD = 32
+local DISTANCIA_MATAR = 15 -- Distancia en studs para matar al jugador
+local COLLISION_GROUP = "PoliciaNPC"
+
+-- Configurar grupo de colisión para que no empujen a jugadores
+pcall(function()
+    PhysicsService:RegisterCollisionGroup(COLLISION_GROUP)
+end)
+pcall(function()
+    PhysicsService:CollisionGroupSetCollidable(COLLISION_GROUP, "Players", false)
+end)
 
 -- OPTIMIZACIÓN 1: Cache de jugadores en zona (evita recalcular cada frame)
 local jugadoresEnZona = {}
@@ -33,6 +44,14 @@ task.spawn(function()
     end
 end)
 
+local function asignarCollisionGroup(npc)
+    for _, parte in pairs(npc:GetDescendants()) do
+        if parte:IsA("BasePart") then
+            parte.CollisionGroup = COLLISION_GROUP
+        end
+    end
+end
+
 local function configurarPolicia(npc)
     local humanoid = npc:WaitForChild("Humanoid", 5)
     local rootPart = npc:WaitForChild("HumanoidRootPart", 5)
@@ -41,32 +60,13 @@ local function configurarPolicia(npc)
     humanoid.WalkSpeed = VELOCIDAD
     local posicionInicial = rootPart.Position
 
-    -- OPTIMIZACIÓN 2: Una sola hitbox en lugar de todas las partes
-    local hitbox = npc:FindFirstChild("HitBox") or rootPart
-    
-    -- OPTIMIZACIÓN 3: Debounce para evitar spam de Touched
-    local jugadoresGolpeados = {}
-    
-    hitbox.Touched:Connect(function(hit)
-        local character = hit.Parent
-        local jugador = Players:GetPlayerFromCharacter(character)
-        
-        if jugador and not jugadoresGolpeados[jugador] then
-            jugadoresGolpeados[jugador] = true
-            
-            local humanoide = character:FindFirstChild("Humanoid")
-            if humanoide and humanoide.Health > 0 then
-                humanoide.Health = 0
-            end
-            
-            -- Limpiar debounce después de un tiempo
-            task.delay(1, function()
-                jugadoresGolpeados[jugador] = nil
-            end)
-        end
-    end)
+    -- Asignar collision group para no empujar jugadores
+    asignarCollisionGroup(npc)
 
-    -- OPTIMIZACIÓN 4: IA usa el cache global
+    -- Debounce para evitar matar al mismo jugador varias veces
+    local jugadoresGolpeados = {}
+
+    -- IA usa el cache global + detección por distancia
     task.spawn(function()
         while npc.Parent and humanoid.Health > 0 do
             local jugadorCercano = nil
@@ -74,8 +74,9 @@ local function configurarPolicia(npc)
 
             -- Usa el cache en lugar de recalcular
             for _, personaje in pairs(jugadoresEnZona) do
-                if personaje:FindFirstChild("HumanoidRootPart") then
-                    local distancia = (personaje.HumanoidRootPart.Position - rootPart.Position).Magnitude
+                local hrp = personaje:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local distancia = (hrp.Position - rootPart.Position).Magnitude
                     if distancia < distanciaMinima then
                         distanciaMinima = distancia
                         jugadorCercano = personaje
@@ -83,13 +84,35 @@ local function configurarPolicia(npc)
                 end
             end
 
-            if jugadorCercano and jugadorCercano:FindFirstChild("HumanoidRootPart") then
-                humanoid:MoveTo(jugadorCercano.HumanoidRootPart.Position)
+            if jugadorCercano then
+                local hrp = jugadorCercano:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    -- Mover hacia el jugador
+                    humanoid:MoveTo(hrp.Position)
+
+                    -- Detectar por distancia y matar
+                    if distanciaMinima <= DISTANCIA_MATAR then
+                        local jugador = Players:GetPlayerFromCharacter(jugadorCercano)
+                        if jugador and not jugadoresGolpeados[jugador] then
+                            jugadoresGolpeados[jugador] = true
+
+                            local humanoide = jugadorCercano:FindFirstChild("Humanoid")
+                            if humanoide and humanoide.Health > 0 then
+                                humanoide.Health = 0
+                            end
+
+                            -- Limpiar debounce después de un tiempo
+                            task.delay(1, function()
+                                jugadoresGolpeados[jugador] = nil
+                            end)
+                        end
+                    end
+                end
             elseif (rootPart.Position - posicionInicial).Magnitude > 5 then
                 humanoid:MoveTo(posicionInicial)
             end
 
-            task.wait(0.3) -- Un poco más frecuente para mejor respuesta
+            task.wait(0.15) -- Más frecuente para mejor detección
         end
     end)
 end
