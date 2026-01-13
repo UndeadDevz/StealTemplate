@@ -4,7 +4,7 @@ local Debris = game:GetService("Debris")
 -- --- CONFIGURACIÓN ---
 local INTERVALO_SPAWN = 4 -- Segundos entre cada bola
 local VELOCIDAD_INICIAL = 200 -- Fuerza de empuje inicial (si el camino no es muy inclinado)
-local TIEMPO_VIDA_MAX = 20 -- Tiempo máximo antes de borrar la bola si se queda atascada
+local TIEMPO_VIDA_MAX = 5 -- Tiempo máximo antes de borrar la bola si se queda atascada
 
 -- --- REFERENCIAS ---
 -- Ajusta las rutas según donde hayas puesto tus partes
@@ -17,7 +17,7 @@ local bolaTemplate = ServerStorage:WaitForChild("GiantBall") -- La bola guardada
 while true do
 	-- 1. Clonar la bola
 	local bola = bolaTemplate:Clone()
-	bola.Position = spawner.Position + Vector3.new(0, 5, 0) -- Aparece un poco arriba del spawner
+	bola.Position = spawner.Position + Vector3.new(0, 8, 0) -- Aparece un poco arriba del spawner
 	bola.Parent = workspace
 	bola.Anchored = false
 	
