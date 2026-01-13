@@ -81,6 +81,7 @@ local function RebirthNormal(player: Player)
 		DataManager.UpdateStat(player, "Rebirths", rebirthsActuales + 1)
 		DataManager.UpdateStat(player, "Level", 1)
 		DataManager.UpdateStat(player, "EXP", 0)
+		DataManager.UpdateStat(player, "TotalEXP", 0) -- Resetear Speed/TotalEXP
 
 		-- Resetear velocidad del personaje
 		if player.Character then
