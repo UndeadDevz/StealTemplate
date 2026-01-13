@@ -567,8 +567,28 @@ local function onPlayerAdded(player)
 	end)
 end
 
+-- Función para limpiar todos los coches de un jugador en workspace
+local function limpiarCochesDeJugador(playerName)
+	-- Buscar por nombre exacto del coche
+	local cocheNombre = workspace:FindFirstChild(playerName .. "_Car")
+	if cocheNombre then
+		cocheNombre:Destroy()
+	end
+
+	-- Buscar coches que tengan conductor con el nombre del jugador
+	for _, obj in pairs(workspace:GetChildren()) do
+		if obj:IsA("Model") then
+			local conductor = obj:FindFirstChild(playerName)
+			if conductor and conductor:FindFirstChild("Humanoid") then
+				obj:Destroy()
+			end
+		end
+	end
+end
+
 -- Manejar cuando un jugador se va
 local function onPlayerRemoving(player)
+	-- Limpiar de la tabla
 	if otherPlayerCars[player.UserId] then
 		if otherPlayerCars[player.UserId].connection then
 			otherPlayerCars[player.UserId].connection:Disconnect()
@@ -578,6 +598,9 @@ local function onPlayerRemoving(player)
 		end
 		otherPlayerCars[player.UserId] = nil
 	end
+
+	-- Limpiar cualquier coche huérfano en workspace
+	limpiarCochesDeJugador(player.Name)
 end
 
 -- Conectar eventos
@@ -776,6 +799,40 @@ task.spawn(function()
 						crearCocheParaOtroJugador(player, character)
 						creatingCars[player.UserId] = nil
 					end)
+				end
+			end
+		end
+	end
+end)
+
+-- ========== LIMPIEZA PERIÓDICA DE COCHES HUÉRFANOS ==========
+-- Cada 10 segundos, limpiar coches de jugadores que ya no existen
+task.spawn(function()
+	while true do
+		task.wait(10)
+
+		-- Crear lista de nombres de jugadores actuales
+		local playerNames = {}
+		for _, player in pairs(Players:GetPlayers()) do
+			playerNames[player.Name] = true
+		end
+
+		-- Buscar y destruir coches huérfanos
+		for _, obj in pairs(workspace:GetChildren()) do
+			if obj:IsA("Model") then
+				-- Verificar si es un coche (tiene "auto" adentro)
+				if obj:FindFirstChild("auto") then
+					-- Buscar si tiene un conductor
+					for _, child in pairs(obj:GetChildren()) do
+						if child:IsA("Model") and child:FindFirstChild("Humanoid") then
+							-- Es un conductor, verificar si el jugador existe
+							if not playerNames[child.Name] and child.Name ~= "Conductor" then
+								print("[OtherPlayersCarSuit] Limpiando coche huérfano de " .. child.Name)
+								obj:Destroy()
+								break
+							end
+						end
+					end
 				end
 			end
 		end
