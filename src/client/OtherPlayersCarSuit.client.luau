@@ -689,4 +689,97 @@ changeCarModel.OnClientEvent:Connect(function(targetPlayer, newEquipType)
 	end
 end)
 
-print("[OtherPlayersCarSuit] ✓ Sistema inicializado")
+-- ========== MANEJO DE STREAMING ==========
+-- Cuando un jugador sale del rango de streaming y vuelve, recrear su coche
+-- Verificar periódicamente si hay jugadores sin coche válido
+
+local STREAMING_CHECK_INTERVAL = 2 -- Verificar cada 2 segundos
+local STREAMING_RANGE = 600 -- Rango para considerar jugadores "cercanos"
+
+local creatingCars = {} -- Flag para evitar crear múltiples veces
+
+-- Función para verificar si ya existe un coche en workspace para este jugador
+local function existeCocheEnWorkspace(playerName)
+	local cocheName = playerName .. "_Car"
+	if workspace:FindFirstChild(cocheName) then
+		return true
+	end
+	-- También buscar coches con conductor que tenga el nombre del jugador
+	for _, obj in pairs(workspace:GetChildren()) do
+		if obj:IsA("Model") and obj:FindFirstChild(playerName) then
+			local posibleConductor = obj:FindFirstChild(playerName)
+			if posibleConductor:FindFirstChild("Humanoid") then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+task.spawn(function()
+	while true do
+		task.wait(STREAMING_CHECK_INTERVAL)
+
+		local localRootPart = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
+		if not localRootPart then continue end
+
+		for _, player in pairs(Players:GetPlayers()) do
+			if player == localPlayer then continue end
+			if creatingCars[player.UserId] then continue end -- Ya está creando
+
+			local character = player.Character
+			if not character then continue end
+
+			local rootPart = character:FindFirstChild("HumanoidRootPart")
+			if not rootPart then continue end
+
+			-- Verificar distancia
+			local distance = (rootPart.Position - localRootPart.Position).Magnitude
+			if distance > STREAMING_RANGE then continue end
+
+			-- Verificar si ya existe coche en workspace
+			if existeCocheEnWorkspace(player.Name) then continue end
+
+			-- Verificar si tiene coche válido en nuestra tabla
+			local playerData = otherPlayerCars[player.UserId]
+
+			if playerData then
+				-- Tiene datos, verificar si el coche sigue existiendo
+				local cocheValido = playerData.coche
+					and playerData.coche.Parent
+					and playerData.coche:FindFirstChild("auto")
+
+				if not cocheValido then
+					-- El coche fue destruido (probablemente por streaming), recrear
+					print("[OtherPlayersCarSuit] Recreando coche de " .. player.Name .. " (streaming)")
+
+					if playerData.connection then
+						playerData.connection:Disconnect()
+					end
+					otherPlayerCars[player.UserId] = nil
+
+					creatingCars[player.UserId] = true
+					task.spawn(function()
+						crearCocheParaOtroJugador(player, character)
+						creatingCars[player.UserId] = nil
+					end)
+				end
+			else
+				-- No tiene coche en tabla, crear uno si el personaje está completo
+				local humanoid = character:FindFirstChild("Humanoid")
+				local lowerTorso = character:FindFirstChild("LowerTorso")
+
+				if humanoid and lowerTorso and rootPart then
+					print("[OtherPlayersCarSuit] Creando coche para " .. player.Name .. " (streaming recovery)")
+					creatingCars[player.UserId] = true
+					task.spawn(function()
+						crearCocheParaOtroJugador(player, character)
+						creatingCars[player.UserId] = nil
+					end)
+				end
+			end
+		end
+	end
+end)
+
+print("[OtherPlayersCarSuit] ✓ Sistema inicializado (con soporte de streaming)")
