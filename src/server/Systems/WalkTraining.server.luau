@@ -1,7 +1,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataManager = require(script.Parent.Parent.Data.DataManager)
-local CarConfigs = require(ReplicatedStorage.Shared.CarConfigs)
+-- CarConfigs ya no se usa para ExpBase (ahora es un stat del jugador)
 
 -- Esperar al RemoteEvent
 local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
@@ -24,15 +24,18 @@ while true do
 		
 		if character and character:FindFirstChild("Humanoid") then
 			local humanoid = character.Humanoid
-			
+
+			-- DEBUG: Descomentar para diagnosticar
+			-- if humanoid.MoveDirection.Magnitude == 0 then
+			-- 	print("[WalkTraining DEBUG] " .. player.Name .. " MoveDirection = 0")
+			-- end
+
 			-- Verificar si está vivo y moviéndose
 			if humanoid.Health > 0 and humanoid.MoveDirection.Magnitude > 0 then
 				-- [[ LÓGICA DE CÁLCULO - HÍBRIDO ]] --
 
-				-- 1. Obtener Base desde CarConfigs
-				local equipType = DataManager.GetStat(player, "EquipType") or 1
-				local carConfig = CarConfigs[equipType]
-				local baseExp = carConfig and carConfig.ExpBase or 1
+				-- 1. Obtener ExpBase desde el perfil del jugador (ya no depende del coche)
+				local baseExp = DataManager.GetStat(player, "ExpBase") or 1
 
 				-- 2. Obtener Multiplicador de Rebirth
 				local rebirths = DataManager.GetStat(player, "Rebirths") or 0

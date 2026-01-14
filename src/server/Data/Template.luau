@@ -3,7 +3,10 @@ return {
 	Level = 1,
 	Rebirths = 0,
 	Wins = 0,
-	EquipType = 1,
+	EquipType = 1, -- Carsuit visual equipado (solo visual, no afecta EXP)
+	ExpBase = 1, -- Valor de EXP ganada por tick (comprable con Wins)
+	ExpBaseLevel = 1, -- Nivel actual de ExpBase (1-8)
+	UnlockedCarsuits = {1}, -- Lista de carsuits desbloqueados
 	Multiplier = 1,
 	CustomSpeed = 0, -- 0 significa "usar máximo", cualquier otro valor es la velocidad personalizada
 	TotalEXP = 0, -- EXP acumulada total (nunca se resta)

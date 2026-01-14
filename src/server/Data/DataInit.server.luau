@@ -8,6 +8,7 @@ local SpeedLeaderboardStore = DataStoreService:GetOrderedDataStore("GlobalSpeed_
 
 --ProfileStore
 local ProfileStore = require(ServerScriptService.Libraries:WaitForChild("ProfileStore"))
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local function GetStoreName()
 	return RunService:IsStudio() and "Test1" or "Live"
@@ -15,9 +16,47 @@ end
 
 local Template = require(ServerScriptService.Data.Template)
 local DataManager = require(ServerScriptService.Data.DataManager)
+local ExpBaseConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ExpBaseConfig"))
 
 --Acess profile store
 local PlayerStore = ProfileStore.New(GetStoreName(), Template)
+
+-- Migrar datos de jugadores legacy (antes del sistema ExpBase separado)
+local function MigrateLegacyData(profile, player)
+	local data = profile.Data
+
+	-- Detectar si es un jugador legacy (no tiene ExpBaseLevel o UnlockedCarsuits)
+	local isLegacyPlayer = data.ExpBaseLevel == nil or data.UnlockedCarsuits == nil
+
+	if isLegacyPlayer then
+		local oldEquipType = data.EquipType or 1
+
+		-- Mapeo de EquipType antiguo -> ExpBaseLevel
+		-- (El EquipType determinaba el ExpBase, ahora es un stat separado)
+		local equipTypeToExpBaseLevel = {
+			[1] = 1, [2] = 2, [3] = 3, [4] = 4,
+			[5] = 5, [6] = 6, [7] = 7, [8] = 8,
+			[9] = 8 -- SharkTruck tenia ExpBase 50000, asignamos nivel 8 (500)
+		}
+
+		-- Migrar ExpBase
+		local newExpBaseLevel = equipTypeToExpBaseLevel[oldEquipType] or 1
+		data.ExpBaseLevel = newExpBaseLevel
+		data.ExpBase = ExpBaseConfig.GetExpBaseValue(newExpBaseLevel)
+
+		-- Migrar UnlockedCarsuits (desbloquear todos hasta el EquipType actual)
+		data.UnlockedCarsuits = {}
+		for i = 1, oldEquipType do
+			table.insert(data.UnlockedCarsuits, i)
+		end
+
+		print("[Migration] Jugador legacy migrado: " .. player.Name)
+		print("  - OldEquipType: " .. oldEquipType)
+		print("  - NewExpBaseLevel: " .. newExpBaseLevel)
+		print("  - NewExpBase: " .. data.ExpBase)
+		print("  - UnlockedCarsuits: " .. table.concat(data.UnlockedCarsuits, ", "))
+	end
+end
 
 -- Calcula la velocidad del personaje basada en el nivel
 local function CalculateWalkSpeed(level: number)
@@ -101,6 +140,9 @@ local function PlayerAdded(player)
 	if profile ~= nil then
 		profile:AddUserId(player.UserId)
 		profile:Reconcile() -- fill in missing data in profile.Data from Template
+
+		-- Migrar datos de jugadores legacy
+		MigrateLegacyData(profile, player)
 
 		--Handle session-lacking
 		profile.OnSessionEnd:Connect(function()
