@@ -15,7 +15,7 @@ local function isWeekend()
     local date = os.date("!*t")
     local day = date.wday
     -- 6: Viernes, 7: Sábado, 1: Domingo
-    return true --(day == 6 or day == 7 or day == 1)
+    return (day == 6 or day == 7 or day == 1)
 end
 
 local function gestionarIsla()
