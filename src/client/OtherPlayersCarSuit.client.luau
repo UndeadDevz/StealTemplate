@@ -495,7 +495,9 @@ local function crearCocheParaOtroJugador(player, character)
 		sHigh.PlaybackSpeed = pitchBase
 
 		-- ========== ROTACIÓN DE RUEDAS ==========
-		anguloRotacionRueda = anguloRotacionRueda + (velocidad / RADIO_RUEDA) * dt
+		-- Si el modelo está invertido (rotación < 90 o > 270), las ruedas giran al revés visualmente
+		local direccionRueda = ((rotacionY < 90) or (rotacionY > 270)) and -1 or 1
+		anguloRotacionRueda = anguloRotacionRueda + (velocidad / RADIO_RUEDA) * dt * direccionRueda
 
 		-- Actualizar ruedas
 		for _, motorData in pairs(motoresRuedasDelanteras) do

@@ -550,8 +550,10 @@ local function setupCoche(equipType)
 		estadoCoche.carroceria.CFrame = CFrame.new(rootPart.Position + Vector3.new(0, estadoCoche.offsetY, 0)) * rotacionBase * rotacion * inclinacion
 
 		-- Rotación de ruedas
+		-- Si el modelo está invertido (rotación < 90 o > 270), las ruedas giran al revés visualmente
 		local velocidad = rootPart.AssemblyLinearVelocity.Magnitude
-		estadoCoche.anguloRotacionRueda = estadoCoche.anguloRotacionRueda + (velocidad / RADIO_RUEDA) * dt
+		local direccionRueda = ((rotacionY < 90) or (rotacionY > 270)) and -1 or 1
+		estadoCoche.anguloRotacionRueda = estadoCoche.anguloRotacionRueda + (velocidad / RADIO_RUEDA) * dt * direccionRueda
 
 		for _, motorData in pairs(estadoCoche.motoresRuedasDelanteras) do
 			motorData.motor.C0 = motorData.offset * CFrame.Angles(estadoCoche.anguloRotacionRueda, 0, 0)
