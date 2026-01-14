@@ -1,4 +1,17 @@
 -- LocalScript "CarSuit" en StarterCharacterScripts
+--[[
+	═══════════════════════════════════════════════════════════════════════
+	CAR SUIT SYSTEM - REFACTORIZADO PARA CAMBIO DINÁMICO
+	═══════════════════════════════════════════════════════════════════════
+
+	Permite cambiar el modelo del coche sin recargar el personaje.
+	Exporta:
+	- _G.ChangeCarTextures(newEquipType) → Cambio de texturas instantáneo
+	- _G.ChangeCarModel(newEquipType) → Cambio de modelo completo sin reload
+
+	═══════════════════════════════════════════════════════════════════════
+]]
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
@@ -15,15 +28,70 @@ local humanoid = character:WaitForChild("Humanoid", 5)
 local rootPart = character:WaitForChild("HumanoidRootPart", 5)
 local lowerTorso = character:WaitForChild("LowerTorso", 5)
 
--- ========== OBTENER EQUIPTYPE INICIAL ==========
+-- ═══════════════════════════════════════════════════════════════════════
+-- ESTADO GLOBAL DEL COCHE
+-- ═══════════════════════════════════════════════════════════════════════
+local estadoCoche = {
+	coche = nil,              -- Modelo del coche actual
+	carroceria = nil,         -- MeshPart principal
+	conductor = nil,          -- Modelo del conductor
+	conductorAnimator = nil,  -- Animator del conductor
+	equipTypeActual = nil,    -- EquipType actual
+
+	-- Animaciones
+	trackIdle = nil,
+	trackLeft = nil,
+	trackRight = nil,
+	animActual = "idle",
+
+	-- Motores de ruedas
+	motoresRuedasDelanteras = {},
+	motoresRuedasTraseras = {},
+	anguloRotacionRueda = 0,
+
+	-- Parámetros dinámicos
+	offsetY = 0,
+	rotacionY = 180,
+
+	-- Conexiones
+	renderConnection = nil,
+
+	-- Raycast
+	pitchActual = 0,
+}
+
+-- Animaciones
+local ANIM_IDLE = "rbxassetid://94863045736134"
+local ANIM_LEFT = "rbxassetid://102025087016232"
+local ANIM_RIGHT = "rbxassetid://99169459312919"
+
+-- Configuración del Raycast para rampas
+local RAYCAST_DISTANCIA = 10
+local VELOCIDAD_INCLINACION = 8
+local PITCH_MAXIMO = math.rad(35)
+
+-- Configuración de ruedas
+local RADIO_RUEDA = 1
+
+-- Control de input (compartido entre setups)
+local teclas = {
+	izquierda = false,
+	derecha = false
+}
+
+-- Raycast params (compartido)
+local raycastParams = RaycastParams.new()
+raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- OBTENER EQUIPTYPE INICIAL
+-- ═══════════════════════════════════════════════════════════════════════
 local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local getStatRemote = remoteEvents:WaitForChild("GetStat")
 
 local function getInitialEquipType()
-	-- Esperar un momento para que el servidor establezca el Attribute
 	local attrValue = player:GetAttribute("EquipType")
 
-	-- Si no está, esperar hasta 3 segundos
 	if not attrValue then
 		local waited = 0
 		while not attrValue and waited < 3 do
@@ -37,7 +105,6 @@ local function getInitialEquipType()
 		return attrValue
 	end
 
-	-- Fallback: pedir al servidor directamente
 	local success, result = pcall(function()
 		return getStatRemote:InvokeServer("EquipType")
 	end)
@@ -45,43 +112,13 @@ local function getInitialEquipType()
 	if success and result then
 		return result
 	end
-	return 1 -- Default
+	return 1
 end
 
-local equipTypeActual = getInitialEquipType()
-
--- Si hay un cambio de modelo pendiente por recarga, usar ese
-if _G.CurrentCarEquipType then
-	equipTypeActual = _G.CurrentCarEquipType
-end
-
--- ========== CONFIGURACIÓN ==========
--- Determinar el modelo base según el EquipType
-local NOMBRE_COCHE = CarCustomizationUtils.GetModelName(equipTypeActual, CarConfigs)
-
--- Altura del auto (ajusta este valor para subir o bajar el coche)
-local ALTURA_AUTO = 0.8 -- Aumenta para subir, disminuye para bajar
-
--- Animaciones
-local ANIM_IDLE = "rbxassetid://94863045736134"
-local ANIM_LEFT = "rbxassetid://102025087016232"
-local ANIM_RIGHT = "rbxassetid://99169459312919"
-
--- Configuración del Raycast para rampas
-local RAYCAST_DISTANCIA = 10
-local VELOCIDAD_INCLINACION = 8
-local PITCH_MAXIMO = math.rad(35)
-
--- Configuración de ruedas
-local RADIO_RUEDA = 1 -- Radio de las ruedas (ajustar según tu modelo)
--- ===================================
-
--- Calcular offset de altura una sola vez
-local offsetY = -humanoid.HipHeight + (lowerTorso.Size.Y / 2) + ALTURA_AUTO
-
--- ========== OCULTAR PERSONAJE REAL ==========
+-- ═══════════════════════════════════════════════════════════════════════
+-- OCULTAR PERSONAJE REAL (solo se hace una vez)
+-- ═══════════════════════════════════════════════════════════════════════
 local function ocultarPersonajeReal()
-	-- Ocultar todas las partes del personaje excepto HumanoidRootPart
 	for _, parte in pairs(character:GetDescendants()) do
 		if parte:IsA("BasePart") and parte.Name ~= "HumanoidRootPart" then
 			parte.Transparency = 1
@@ -99,7 +136,6 @@ local function ocultarPersonajeReal()
 		end
 	end
 
-	-- Ocultar la cara (Face)
 	local head = character:FindFirstChild("Head")
 	if head then
 		local face = head:FindFirstChild("face") or head:FindFirstChild("Face")
@@ -108,7 +144,6 @@ local function ocultarPersonajeReal()
 		end
 	end
 
-	-- Listener para nuevas partes que se agreguen al personaje
 	character.DescendantAdded:Connect(function(descendant)
 		if descendant:IsA("BasePart") and descendant.Name ~= "HumanoidRootPart" then
 			descendant.Transparency = 1
@@ -125,85 +160,10 @@ local function ocultarPersonajeReal()
 	end)
 end
 
-ocultarPersonajeReal()
-
--- Desactivar animaciones del personaje real
-local animate = character:FindFirstChild("Animate")
-if animate then
-	animate:Destroy()
-end
-
--- ========== CLONAR COCHE CON CONDUCTOR ==========
-local cocheOriginal = ReplicatedStorage:WaitForChild(NOMBRE_COCHE)
-local coche = cocheOriginal:Clone()
-coche.Parent = workspace
-
--- Configurar partes del coche
-local auto = coche:FindFirstChild("auto")
-if not auto then
-	warn("[CarSuit] ❌ No se encontró 'auto' en el coche!")
-	return
-end
-
--- Buscar el Body que contiene el MeshPart principal
-local bodyModel = auto:FindFirstChild("Body")
-if not bodyModel then
-	warn("[CarSuit] ❌ No se encontró 'Body' dentro de auto!")
-	return
-end
-
--- Buscar el MeshPart dentro de Body
-local carroceria = nil
-for _, child in pairs(bodyModel:GetDescendants()) do
-	if child:IsA("MeshPart") then
-		carroceria = child
-		break
-	end
-end
-
-if not carroceria then
-	warn("[CarSuit] ❌ No se encontró MeshPart dentro de Body!")
-	return
-end
-
--- Buscar conductor y volante
-local conductor = coche:FindFirstChild("Conductor")
-if not conductor then
-	warn("[CarSuit] ❌ No se encontró 'Conductor' en el coche!")
-	return
-end
-
--- Renombrar el conductor con el nombre del jugador
-conductor.Name = player.Name
-
-local conductorHumanoid = conductor:WaitForChild("Humanoid")
-conductorHumanoid.PlatformStand = true
-local conductorAnimator = conductorHumanoid:WaitForChild("Animator")
-
--- Primero configurar todas las partes como no colisionables
-for _, parte in pairs(coche:GetDescendants()) do
-	if parte:IsA("BasePart") then
-		parte.CanCollide = false
-	end
-end
-
--- Anclar solo la carrocería
-carroceria.Anchored = true
-
--- Obtener ruedas individuales
-local frontLeftTire = auto:FindFirstChild("FrontLeftTire")
-local frontRightTire = auto:FindFirstChild("FrontRightTire")
-local backRightTire = auto:FindFirstChild("BackRightTire")
-local backLeftTire = auto:FindFirstChild("BackLelfTire") -- Nota: tiene un typo "Lelf" en el modelo
-
-if not frontLeftTire then warn("[CarSuit] ⚠ No se encontró 'FrontLeftTire'") end
-if not frontRightTire then warn("[CarSuit] ⚠ No se encontró 'FrontRightTire'") end
-if not backRightTire then warn("[CarSuit] ⚠ No se encontró 'BackRightTire'") end
-if not backLeftTire then warn("[CarSuit] ⚠ No se encontró 'BackLelfTire'") end
-
--- ========== SOLDAR PARTES DEL AUTO (EXCEPTO RUEDAS) ==========
--- Función para verificar si una parte está dentro de un modelo "Wheel" (NO "Brake")
-local function estaEnModeloWheel(parte)
+-- ═══════════════════════════════════════════════════════════════════════
+-- FUNCIONES AUXILIARES PARA SETUP DE RUEDAS
+-- ═══════════════════════════════════════════════════════════════════════
+local function estaEnModeloWheel(parte, auto)
 	local parent = parte.Parent
 	while parent and parent ~= auto do
 		if parent:IsA("Model") and parent.Name == "Wheel" then
@@ -214,56 +174,17 @@ local function estaEnModeloWheel(parte)
 	return false
 end
 
--- Soldar partes que NO son las ruedas (Wheel)
--- Los frenos (Brake) SÍ se sueldan a la carrocería
-local frenosSoldados = 0
-for _, parte in pairs(auto:GetDescendants()) do
-	if parte:IsA("BasePart") and parte ~= carroceria then
-		-- Solo excluir si está dentro de un modelo "Wheel" (Tire + Rim)
-		-- Los "Brake" se soldarán normalmente
-		if not estaEnModeloWheel(parte) then
-			-- Verificar si es un freno para el contador
-			local parent = parte.Parent
-			local esBrake = false
-			while parent and parent ~= auto do
-				if parent:IsA("Model") and parent.Name == "Brake" then
-					esBrake = true
-					frenosSoldados = frenosSoldados + 1
-					break
-				end
-				parent = parent.Parent
-			end
-
-			local weld = Instance.new("WeldConstraint")
-			weld.Part0 = carroceria
-			weld.Part1 = parte
-			weld.Parent = carroceria
-		end
-	end
-end
-
-print("[CarSuit] ✓ Partes soldadas - Frenos: " .. frenosSoldados)
-
--- ========== CONFIGURAR RUEDAS CON MOTOR6D ==========
-local motoresRuedasDelanteras = {}
-local motoresRuedasTraseras = {}
-local anguloRotacionRueda = 0
-
--- Función para encontrar el MeshPart principal de una rueda (dentro del modelo "Wheel")
 local function encontrarMeshPartRueda(tireModel)
 	if not tireModel then return nil end
 
-	-- Buscar el modelo "Wheel" dentro del modelo de neumático
 	local wheelModel = tireModel:FindFirstChild("Wheel")
 	if not wheelModel then
 		warn("[CarSuit] ⚠ No se encontró modelo 'Wheel' dentro de " .. tireModel.Name)
 		return nil
 	end
 
-	-- Primero intentar encontrar el Tire dentro de Wheel
 	local tireSubModel = wheelModel:FindFirstChild("Tire")
 	if tireSubModel then
-		-- Buscar el primer MeshPart dentro de Tire
 		for _, desc in pairs(tireSubModel:GetDescendants()) do
 			if desc:IsA("MeshPart") then
 				return desc
@@ -271,7 +192,6 @@ local function encontrarMeshPartRueda(tireModel)
 		end
 	end
 
-	-- Si no encontramos Tire o no tiene MeshPart, buscar en Rim
 	local rimModel = wheelModel:FindFirstChild("Rim")
 	if rimModel then
 		for _, desc in pairs(rimModel:GetDescendants()) do
@@ -281,7 +201,6 @@ local function encontrarMeshPartRueda(tireModel)
 		end
 	end
 
-	-- Como último recurso, devolver el primer MeshPart dentro de "Wheel"
 	for _, desc in pairs(wheelModel:GetDescendants()) do
 		if desc:IsA("MeshPart") then
 			return desc
@@ -291,7 +210,6 @@ local function encontrarMeshPartRueda(tireModel)
 	return nil
 end
 
--- Función para soldar todas las partes dentro de Wheel (Tire + Rim) entre sí
 local function soldarPartesWheel(wheelModel, ruedaPrincipal)
 	for _, parte in pairs(wheelModel:GetDescendants()) do
 		if parte:IsA("BasePart") and parte ~= ruedaPrincipal then
@@ -303,15 +221,13 @@ local function soldarPartesWheel(wheelModel, ruedaPrincipal)
 	end
 end
 
--- Función para crear Motor6D para una rueda
-local function crearMotorRueda(tireModel, esDelantera, nombreRueda)
+local function crearMotorRueda(tireModel, carroceria, nombreRueda)
 	local ruedaMesh = encontrarMeshPartRueda(tireModel)
 	if not ruedaMesh then
 		warn("[CarSuit] ❌ No se encontró MeshPart en " .. nombreRueda)
 		return nil
 	end
 
-	-- Soldar todas las partes de Wheel (Tire + Rim) a la rueda principal
 	local wheelModel = tireModel:FindFirstChild("Wheel")
 	if wheelModel then
 		soldarPartesWheel(wheelModel, ruedaMesh)
@@ -325,111 +241,364 @@ local function crearMotorRueda(tireModel, esDelantera, nombreRueda)
 	motor.C0 = offset
 	motor.Parent = carroceria
 
-	print("[CarSuit] ✓ " .. nombreRueda .. " conectada")
 	return motor
 end
 
--- Conectar ruedas delanteras
-if frontLeftTire then
-	local motor = crearMotorRueda(frontLeftTire, true, "FrontLeftTire")
-	if motor then
-		table.insert(motoresRuedasDelanteras, {motor = motor, offset = motor.C0})
+-- ═══════════════════════════════════════════════════════════════════════
+-- DESTRUIR COCHE ACTUAL
+-- ═══════════════════════════════════════════════════════════════════════
+local function destruirCocheActual()
+	-- Desconectar RenderStepped
+	if estadoCoche.renderConnection then
+		estadoCoche.renderConnection:Disconnect()
+		estadoCoche.renderConnection = nil
 	end
+
+	-- Parar animaciones
+	if estadoCoche.trackIdle then estadoCoche.trackIdle:Stop() end
+	if estadoCoche.trackLeft then estadoCoche.trackLeft:Stop() end
+	if estadoCoche.trackRight then estadoCoche.trackRight:Stop() end
+
+	-- Destruir el modelo del coche
+	if estadoCoche.coche and estadoCoche.coche.Parent then
+		estadoCoche.coche:Destroy()
+	end
+
+	-- Limpiar referencias
+	estadoCoche.coche = nil
+	estadoCoche.carroceria = nil
+	estadoCoche.conductor = nil
+	estadoCoche.conductorAnimator = nil
+	estadoCoche.trackIdle = nil
+	estadoCoche.trackLeft = nil
+	estadoCoche.trackRight = nil
+	estadoCoche.motoresRuedasDelanteras = {}
+	estadoCoche.motoresRuedasTraseras = {}
+	estadoCoche.anguloRotacionRueda = 0
+	estadoCoche.pitchActual = 0
+	estadoCoche.animActual = "idle"
+
+	print("[CarSuit] ✓ Coche anterior destruido")
 end
 
-if frontRightTire then
-	local motor = crearMotorRueda(frontRightTire, true, "FrontRightTire")
-	if motor then
-		table.insert(motoresRuedasDelanteras, {motor = motor, offset = motor.C0})
+-- ═══════════════════════════════════════════════════════════════════════
+-- SETUP DEL COCHE (función reutilizable)
+-- ═══════════════════════════════════════════════════════════════════════
+local function setupCoche(equipType)
+	-- Obtener configuración
+	local config = CarConfigs[equipType]
+	if not config then
+		warn("[CarSuit] ❌ No existe configuración para EquipType " .. equipType)
+		return false
 	end
+
+	local nombreCoche = config.ModelName
+	local alturaAuto = config.AlturaAuto or 0.8
+	local rotacionY = config.Rotacion or 180
+
+	-- Calcular offset de altura
+	estadoCoche.offsetY = -humanoid.HipHeight + (lowerTorso.Size.Y / 2) + alturaAuto
+	estadoCoche.rotacionY = rotacionY
+	estadoCoche.equipTypeActual = equipType
+
+	-- Clonar coche
+	local cocheOriginal = ReplicatedStorage:FindFirstChild(nombreCoche)
+	if not cocheOriginal then
+		warn("[CarSuit] ❌ No se encontró el modelo '" .. nombreCoche .. "' en ReplicatedStorage")
+		return false
+	end
+
+	local coche = cocheOriginal:Clone()
+	coche.Parent = workspace
+	estadoCoche.coche = coche
+
+	-- Configurar partes del coche
+	local auto = coche:FindFirstChild("auto")
+	if not auto then
+		warn("[CarSuit] ❌ No se encontró 'auto' en el coche!")
+		coche:Destroy()
+		return false
+	end
+
+	-- Buscar Body y carrocería
+	local bodyModel = auto:FindFirstChild("Body")
+	if not bodyModel then
+		warn("[CarSuit] ❌ No se encontró 'Body' dentro de auto!")
+		coche:Destroy()
+		return false
+	end
+
+	local carroceria = nil
+	for _, child in pairs(bodyModel:GetDescendants()) do
+		if child:IsA("MeshPart") then
+			carroceria = child
+			break
+		end
+	end
+
+	if not carroceria then
+		warn("[CarSuit] ❌ No se encontró MeshPart dentro de Body!")
+		coche:Destroy()
+		return false
+	end
+
+	estadoCoche.carroceria = carroceria
+
+	-- Buscar conductor
+	local conductor = coche:FindFirstChild("Conductor")
+	if not conductor then
+		warn("[CarSuit] ❌ No se encontró 'Conductor' en el coche!")
+		coche:Destroy()
+		return false
+	end
+
+	conductor.Name = player.Name
+	estadoCoche.conductor = conductor
+
+	local conductorHumanoid = conductor:WaitForChild("Humanoid")
+	conductorHumanoid.PlatformStand = true
+	local conductorAnimator = conductorHumanoid:WaitForChild("Animator")
+	estadoCoche.conductorAnimator = conductorAnimator
+
+	-- Configurar partes como no colisionables
+	for _, parte in pairs(coche:GetDescendants()) do
+		if parte:IsA("BasePart") then
+			parte.CanCollide = false
+		end
+	end
+
+	-- Anclar carrocería
+	carroceria.Anchored = true
+
+	-- Obtener ruedas
+	local frontLeftTire = auto:FindFirstChild("FrontLeftTire")
+	local frontRightTire = auto:FindFirstChild("FrontRightTire")
+	local backRightTire = auto:FindFirstChild("BackRightTire")
+	local backLeftTire = auto:FindFirstChild("BackLelfTire")
+
+	-- Soldar partes que NO son ruedas
+	for _, parte in pairs(auto:GetDescendants()) do
+		if parte:IsA("BasePart") and parte ~= carroceria then
+			if not estaEnModeloWheel(parte, auto) then
+				local weld = Instance.new("WeldConstraint")
+				weld.Part0 = carroceria
+				weld.Part1 = parte
+				weld.Parent = carroceria
+			end
+		end
+	end
+
+	-- Configurar motores de ruedas
+	estadoCoche.motoresRuedasDelanteras = {}
+	estadoCoche.motoresRuedasTraseras = {}
+
+	if frontLeftTire then
+		local motor = crearMotorRueda(frontLeftTire, carroceria, "FrontLeftTire")
+		if motor then
+			table.insert(estadoCoche.motoresRuedasDelanteras, {motor = motor, offset = motor.C0})
+		end
+	end
+
+	if frontRightTire then
+		local motor = crearMotorRueda(frontRightTire, carroceria, "FrontRightTire")
+		if motor then
+			table.insert(estadoCoche.motoresRuedasDelanteras, {motor = motor, offset = motor.C0})
+		end
+	end
+
+	if backRightTire then
+		local motor = crearMotorRueda(backRightTire, carroceria, "BackRightTire")
+		if motor then
+			table.insert(estadoCoche.motoresRuedasTraseras, {motor = motor, offset = motor.C0})
+		end
+	end
+
+	if backLeftTire then
+		local motor = crearMotorRueda(backLeftTire, carroceria, "BackLeftTire")
+		if motor then
+			table.insert(estadoCoche.motoresRuedasTraseras, {motor = motor, offset = motor.C0})
+		end
+	end
+
+	-- Soldar conductor a carrocería
+	for _, parte in pairs(conductor:GetDescendants()) do
+		if parte:IsA("BasePart") then
+			parte.CanCollide = false
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = carroceria
+			weld.Part1 = parte
+			weld.Parent = carroceria
+		end
+	end
+
+	conductor.DescendantAdded:Connect(function(descendant)
+		if descendant:IsA("BasePart") then
+			descendant.CanCollide = false
+		end
+	end)
+
+	-- Aplicar texturas si es tipo Texture
+	if config.Type == "Texture" then
+		local success = CarCustomizationUtils.ApplyTextureConfig(coche, config)
+		if success then
+			print("[CarSuit] ✓ Texturas aplicadas para EquipType " .. equipType)
+		end
+	end
+
+	-- Copiar apariencia al conductor
+	pcall(function()
+		local descripcion = humanoid:GetAppliedDescription()
+		conductorHumanoid:ApplyDescription(descripcion)
+	end)
+
+	-- Configurar animaciones
+	local animIdle = Instance.new("Animation")
+	animIdle.AnimationId = ANIM_IDLE
+	estadoCoche.trackIdle = conductorAnimator:LoadAnimation(animIdle)
+	estadoCoche.trackIdle.Priority = Enum.AnimationPriority.Action
+	estadoCoche.trackIdle.Looped = true
+
+	local animLeft = Instance.new("Animation")
+	animLeft.AnimationId = ANIM_LEFT
+	estadoCoche.trackLeft = conductorAnimator:LoadAnimation(animLeft)
+	estadoCoche.trackLeft.Priority = Enum.AnimationPriority.Action2
+	estadoCoche.trackLeft.Looped = true
+
+	local animRight = Instance.new("Animation")
+	animRight.AnimationId = ANIM_RIGHT
+	estadoCoche.trackRight = conductorAnimator:LoadAnimation(animRight)
+	estadoCoche.trackRight.Priority = Enum.AnimationPriority.Action2
+	estadoCoche.trackRight.Looped = true
+
+	estadoCoche.trackIdle:Play()
+	estadoCoche.animActual = "idle"
+
+	-- Actualizar raycast params
+	raycastParams.FilterDescendantsInstances = {character, coche}
+
+	-- Función para obtener pitch del suelo
+	-- Toma en cuenta la rotación del modelo para calcular correctamente frente/atrás
+	local function obtenerPitchSuelo()
+		local lookVector = rootPart.CFrame.LookVector
+
+		-- Si rotacionY está cerca de 0 (o > 270), el frente del coche está opuesto al jugador
+		-- Invertimos el lookVector para que el raycast sea correcto
+		local estaInvertido = (rotacionY < 90) or (rotacionY > 270)
+		if estaInvertido then
+			lookVector = -lookVector
+		end
+
+		local posicionFrente = rootPart.Position + lookVector * 3
+		local posicionAtras = rootPart.Position - lookVector * 3
+
+		local rayFrente = workspace:Raycast(posicionFrente, Vector3.new(0, -RAYCAST_DISTANCIA, 0), raycastParams)
+		local rayAtras = workspace:Raycast(posicionAtras, Vector3.new(0, -RAYCAST_DISTANCIA, 0), raycastParams)
+
+		if rayFrente and rayAtras then
+			local diferencia = rayAtras.Position.Y - rayFrente.Position.Y
+			local pitch = math.atan2(diferencia, 6)
+			return math.clamp(pitch, -PITCH_MAXIMO, PITCH_MAXIMO)
+		end
+
+		return 0
+	end
+
+	-- Función para actualizar animación
+	local function actualizarAnimacion(nuevaAnim)
+		if estadoCoche.animActual == nuevaAnim then return end
+
+		if estadoCoche.animActual == "left" then
+			estadoCoche.trackLeft:Stop(0.2)
+		elseif estadoCoche.animActual == "right" then
+			estadoCoche.trackRight:Stop(0.2)
+		end
+
+		if nuevaAnim == "left" then
+			estadoCoche.trackLeft:Play(0.2)
+		elseif nuevaAnim == "right" then
+			estadoCoche.trackRight:Play(0.2)
+		end
+
+		estadoCoche.animActual = nuevaAnim
+	end
+
+	-- Conectar RenderStepped
+	estadoCoche.renderConnection = RunService.RenderStepped:Connect(function(dt)
+		-- Verificar que el coche sigue existiendo
+		if not estadoCoche.carroceria or not estadoCoche.carroceria.Parent then
+			return
+		end
+
+		-- Actualizar animación según input
+		if teclas.izquierda and not teclas.derecha then
+			actualizarAnimacion("left")
+		elseif teclas.derecha and not teclas.izquierda then
+			actualizarAnimacion("right")
+		else
+			actualizarAnimacion("idle")
+		end
+
+		-- Calcular inclinación
+		local pitchObjetivo = obtenerPitchSuelo()
+		estadoCoche.pitchActual = estadoCoche.pitchActual + (pitchObjetivo - estadoCoche.pitchActual) * dt * VELOCIDAD_INCLINACION
+
+		-- Posicionar carrocería
+		local rotacionBase = rootPart.CFrame - rootPart.Position
+		local inclinacion = CFrame.Angles(estadoCoche.pitchActual, 0, 0)
+		local rotacion = CFrame.Angles(0, math.rad(estadoCoche.rotacionY), 0)
+
+		estadoCoche.carroceria.CFrame = CFrame.new(rootPart.Position + Vector3.new(0, estadoCoche.offsetY, 0)) * rotacionBase * rotacion * inclinacion
+
+		-- Rotación de ruedas
+		local velocidad = rootPart.AssemblyLinearVelocity.Magnitude
+		estadoCoche.anguloRotacionRueda = estadoCoche.anguloRotacionRueda + (velocidad / RADIO_RUEDA) * dt
+
+		for _, motorData in pairs(estadoCoche.motoresRuedasDelanteras) do
+			motorData.motor.C0 = motorData.offset * CFrame.Angles(estadoCoche.anguloRotacionRueda, 0, 0)
+		end
+
+		for _, motorData in pairs(estadoCoche.motoresRuedasTraseras) do
+			motorData.motor.C0 = motorData.offset * CFrame.Angles(estadoCoche.anguloRotacionRueda, 0, 0)
+		end
+	end)
+
+	print("[CarSuit] ✓ Coche configurado: " .. nombreCoche .. " (EquipType " .. equipType .. ")")
+	return true
 end
 
--- Conectar ruedas traseras
-if backRightTire then
-	local motor = crearMotorRueda(backRightTire, false, "BackRightTire")
-	if motor then
-		table.insert(motoresRuedasTraseras, {motor = motor, offset = motor.C0})
-	end
+-- ═══════════════════════════════════════════════════════════════════════
+-- INICIALIZACIÓN
+-- ═══════════════════════════════════════════════════════════════════════
+
+-- Ocultar personaje real (solo una vez)
+ocultarPersonajeReal()
+
+-- Desactivar animaciones del personaje real
+local animate = character:FindFirstChild("Animate")
+if animate then
+	animate:Destroy()
 end
 
-if backLeftTire then
-	local motor = crearMotorRueda(backLeftTire, false, "BackLeftTire")
-	if motor then
-		table.insert(motoresRuedasTraseras, {motor = motor, offset = motor.C0})
-	end
-end
--- ========================================================
-
-
--- Soldar TODAS las partes del conductor a la carrocería y desactivar colisiones
-
--- Soldar TODAS las partes del conductor a la carrocería y desactivar colisiones/touch
-for _, parte in pairs(conductor:GetDescendants()) do
-	if parte:IsA("BasePart") then
-		parte.CanCollide = false
-		local weld = Instance.new("WeldConstraint")
-		weld.Part0 = carroceria
-		weld.Part1 = parte
-		weld.Parent = carroceria
-	end
+-- Obtener EquipType inicial
+local equipTypeInicial = getInitialEquipType()
+if _G.CurrentCarEquipType then
+	equipTypeInicial = _G.CurrentCarEquipType
 end
 
--- Listener para nuevas partes añadidas al conductor
-conductor.DescendantAdded:Connect(function(descendant)
-	if descendant:IsA("BasePart") then
-		descendant.CanCollide = false
-	end
-end)
+-- Setup inicial del coche
+setupCoche(equipTypeInicial)
 
--- ========== APLICAR TEXTURAS SEGÚN CONFIG ==========
-local configActual = CarConfigs[equipTypeActual]
-if configActual and configActual.Type == "Texture" then
-	local success = CarCustomizationUtils.ApplyTextureConfig(coche, configActual)
-	if success then
-		print("[CarSuit] ✓ Texturas aplicadas para EquipType " .. equipTypeActual)
-	else
-		warn("[CarSuit] ⚠ Error aplicando texturas para EquipType " .. equipTypeActual)
-	end
-end
--- ========================================================
-
--- ========== COPIAR APARIENCIA AL CONDUCTOR ==========
-local function copiarApariencia()
-	local descripcion = humanoid:GetAppliedDescription()
-	conductorHumanoid:ApplyDescription(descripcion)
+-- Teleportar si hay posición guardada
+if _G.RespawnPosition then
+	task.wait(0.1)
+	rootPart.CFrame = CFrame.new(_G.RespawnPosition)
+	_G.RespawnPosition = nil
+	print("[CarSuit] ✓ Teleportado a posición guardada")
 end
 
-pcall(copiarApariencia)
-
--- ========== ANIMACIONES DEL CONDUCTOR ==========
-local animIdle = Instance.new("Animation")
-animIdle.AnimationId = ANIM_IDLE
-local trackIdle = conductorAnimator:LoadAnimation(animIdle)
-trackIdle.Priority = Enum.AnimationPriority.Action
-trackIdle.Looped = true
-
-local animLeft = Instance.new("Animation")
-animLeft.AnimationId = ANIM_LEFT
-local trackLeft = conductorAnimator:LoadAnimation(animLeft)
-trackLeft.Priority = Enum.AnimationPriority.Action2
-trackLeft.Looped = true
-
-local animRight = Instance.new("Animation")
-animRight.AnimationId = ANIM_RIGHT
-local trackRight = conductorAnimator:LoadAnimation(animRight)
-trackRight.Priority = Enum.AnimationPriority.Action2
-trackRight.Looped = true
-
-trackIdle:Play()
-
--- ========== CONTROL DE INPUT ==========
-local teclas = {
-	izquierda = false,
-	derecha = false
-}
-
-local animActual = "idle"
-
+-- ═══════════════════════════════════════════════════════════════════════
+-- CONTROL DE INPUT (persistente entre cambios de coche)
+-- ═══════════════════════════════════════════════════════════════════════
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then return end
 	if input.KeyCode == Enum.KeyCode.A or input.KeyCode == Enum.KeyCode.Left then
@@ -447,91 +616,9 @@ UserInputService.InputEnded:Connect(function(input)
 	end
 end)
 
-local function actualizarAnimacion(nuevaAnim)
-	if animActual == nuevaAnim then return end
-
-	if animActual == "left" then
-		trackLeft:Stop(0.2)
-	elseif animActual == "right" then
-		trackRight:Stop(0.2)
-	end
-
-	if nuevaAnim == "left" then
-		trackLeft:Play(0.2)
-	elseif nuevaAnim == "right" then
-		trackRight:Play(0.2)
-	end
-
-	animActual = nuevaAnim
-end
-
--- ========== RAYCAST PARA INCLINACIÓN ==========
-local raycastParams = RaycastParams.new()
-raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-raycastParams.FilterDescendantsInstances = {character, coche}
-
-local pitchActual = 0
-
-local function obtenerPitchSuelo()
-	local lookVector = rootPart.CFrame.LookVector
-	local posicionFrente = rootPart.Position + lookVector * 3
-	local posicionAtras = rootPart.Position - lookVector * 3
-
-	local rayFrente = workspace:Raycast(posicionFrente, Vector3.new(0, -RAYCAST_DISTANCIA, 0), raycastParams)
-	local rayAtras = workspace:Raycast(posicionAtras, Vector3.new(0, -RAYCAST_DISTANCIA, 0), raycastParams)
-
-	if rayFrente and rayAtras then
-		local diferencia = rayAtras.Position.Y - rayFrente.Position.Y
-		local pitch = math.atan2(diferencia, 6)
-		return math.clamp(pitch, -PITCH_MAXIMO, PITCH_MAXIMO)
-	end
-
-	return 0
-end
-
--- ========== BUCLE PRINCIPAL ==========
-RunService.RenderStepped:Connect(function(dt)
-	if teclas.izquierda and not teclas.derecha then
-		actualizarAnimacion("left")
-	elseif teclas.derecha and not teclas.izquierda then
-		actualizarAnimacion("right")
-	else
-		actualizarAnimacion("idle")
-	end
-
-	local pitchObjetivo = obtenerPitchSuelo()
-	pitchActual = pitchActual + (pitchObjetivo - pitchActual) * dt * VELOCIDAD_INCLINACION
-
-	local rotacionBase = rootPart.CFrame - rootPart.Position
-	local inclinacion = CFrame.Angles(pitchActual, 0, 0)
-	local rotacion180 = CFrame.Angles(0, math.rad(180), 0) -- Rotar 180 grados para corregir dirección
-
-	carroceria.CFrame = CFrame.new(rootPart.Position + Vector3.new(0, offsetY, 0)) * rotacionBase * rotacion180 * inclinacion
-
-	-- ========== ROTACIÓN DE RUEDAS ==========
-	-- Calcular rotación de ruedas basada en velocidad (solo adelante/atrás)
-	local velocidad = rootPart.AssemblyLinearVelocity.Magnitude
-	anguloRotacionRueda = anguloRotacionRueda + (velocidad / RADIO_RUEDA) * dt
-
-	-- Actualizar ruedas delanteras (solo rotan, no doblan)
-	for _, motorData in pairs(motoresRuedasDelanteras) do
-		local motor = motorData.motor
-		local offset = motorData.offset
-		-- Solo rotación en X (adelante/atrás)
-		motor.C0 = offset * CFrame.Angles(anguloRotacionRueda, 0, 0)
-	end
-
-	-- Actualizar ruedas traseras (solo rotan)
-	for _, motorData in pairs(motoresRuedasTraseras) do
-		local motor = motorData.motor
-		local offset = motorData.offset
-		-- Solo rotación en X (adelante/atrás)
-		motor.C0 = offset * CFrame.Angles(anguloRotacionRueda, 0, 0)
-	end
-	-- ========================================================
-end)
-
--- ========== ESTADOS DEL HUMANOID ==========
+-- ═══════════════════════════════════════════════════════════════════════
+-- ESTADOS DEL HUMANOID
+-- ═══════════════════════════════════════════════════════════════════════
 humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
 humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
 humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
@@ -543,27 +630,24 @@ humanoid.StateChanged:Connect(function(_, nuevoEstado)
 	end
 end)
 
--- ========== LIMPIEZA ==========
+-- ═══════════════════════════════════════════════════════════════════════
+-- LIMPIEZA AL MORIR O SALIR
+-- ═══════════════════════════════════════════════════════════════════════
 humanoid.Died:Connect(function()
-	coche:Destroy()
+	destruirCocheActual()
 end)
 
 player.CharacterRemoving:Connect(function()
-	coche:Destroy()
+	destruirCocheActual()
 end)
 
--- Teleportar a la posición guardada si existe (cuando se cambió de modelo)
-if _G.RespawnPosition then
-	task.wait(0.1) -- Pequeña espera para asegurar que todo está cargado
-	rootPart.CFrame = CFrame.new(_G.RespawnPosition)
-	_G.RespawnPosition = nil -- Limpiar después de usar
-	print("[CarSuit] ✓ Teleportado a posición guardada")
-end
+-- ═══════════════════════════════════════════════════════════════════════
+-- EXPORTAR FUNCIONES GLOBALES
+-- ═══════════════════════════════════════════════════════════════════════
 
--- ========== EXPORTAR FUNCIÓN DE CAMBIO DE TEXTURAS ==========
--- Esta función permite cambiar texturas dinámicamente sin recargar el personaje
+-- Cambio de texturas (instantáneo, sin cambiar modelo)
 local function changeCarTextures(newEquipType: number)
-	if not coche or not coche.Parent then
+	if not estadoCoche.coche or not estadoCoche.coche.Parent then
 		warn("[CarSuit] No hay coche activo para cambiar texturas")
 		return false
 	end
@@ -575,13 +659,13 @@ local function changeCarTextures(newEquipType: number)
 	end
 
 	if newConfig.Type ~= "Texture" then
-		warn("[CarSuit] EquipType " .. newEquipType .. " no es de tipo Texture")
+		warn("[CarSuit] EquipType " .. newEquipType .. " no es de tipo Texture, usa ChangeCarModel")
 		return false
 	end
 
-	local success = CarCustomizationUtils.ApplyTextureConfig(coche, newConfig)
+	local success = CarCustomizationUtils.ApplyTextureConfig(estadoCoche.coche, newConfig)
 	if success then
-		equipTypeActual = newEquipType
+		estadoCoche.equipTypeActual = newEquipType
 		print("[CarSuit] ✓ Texturas cambiadas a EquipType " .. newEquipType)
 	else
 		warn("[CarSuit] ⚠ Error cambiando texturas a EquipType " .. newEquipType)
@@ -590,8 +674,34 @@ local function changeCarTextures(newEquipType: number)
 	return success
 end
 
-_G.ChangeCarTextures = changeCarTextures
-print("[CarSuit] ✓ Función de cambio de texturas exportada")
--- ========================================================
+-- Cambio de modelo completo (destruye y recrea el coche)
+local function changeCarModel(newEquipType: number)
+	local newConfig = CarConfigs[newEquipType]
+	if not newConfig then
+		warn("[CarSuit] Config no encontrada para EquipType " .. newEquipType)
+		return false
+	end
 
-print("[CarSuit] ✓ Car-Suit listo!")
+	print("[CarSuit] ⟳ Cambiando modelo a EquipType " .. newEquipType)
+
+	-- Destruir coche actual
+	destruirCocheActual()
+
+	-- Crear nuevo coche
+	local success = setupCoche(newEquipType)
+
+	if success then
+		print("[CarSuit] ✓ Modelo cambiado exitosamente a EquipType " .. newEquipType)
+	else
+		warn("[CarSuit] ❌ Error cambiando modelo a EquipType " .. newEquipType)
+		-- Intentar restaurar el modelo anterior
+		setupCoche(estadoCoche.equipTypeActual or 1)
+	end
+
+	return success
+end
+
+_G.ChangeCarTextures = changeCarTextures
+_G.ChangeCarModel = changeCarModel
+
+print("[CarSuit] ✅ Sistema Car-Suit inicializado con soporte para cambio dinámico")

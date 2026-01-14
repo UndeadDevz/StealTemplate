@@ -5,6 +5,11 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
+-- Módulos
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Utils = Shared:WaitForChild("Utils")
+local NumberFormatter = require(Utils:WaitForChild("NumberFormatter"))
+
 -- Esperar RemoteEvents
 local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local expGainedEvent = remoteEvents:WaitForChild("ExpGainedEvent")
@@ -40,7 +45,7 @@ local function SpawnWings(expAmount)
 	-- 1.5. Crear el texto de EXP pegado a la imagen
 	local expText = Instance.new("TextLabel")
 	expText.Name = "ExpText"
-	expText.Text = "+" .. string.format("%.1f", expAmount)
+	expText.Text = "+" .. NumberFormatter.Format(expAmount, 2)
 	expText.Font = Enum.Font.GothamBold
 	expText.TextSize = 18
 	expText.TextColor3 = Color3.fromRGB(255, 215, 0) -- Dorado

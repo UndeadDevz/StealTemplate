@@ -171,6 +171,23 @@ if not changeCarModel then
 	print("✅ RemoteEvent 'ChangeCarModel' creado")
 end
 
+-- Crea el RemoteEvent para solicitar recarga de personaje (el cliente no puede llamar LoadCharacter)
+local requestReloadCharacter = remoteEventsFolder:FindFirstChild("RequestReloadCharacter")
+if not requestReloadCharacter then
+	requestReloadCharacter = Instance.new("RemoteEvent")
+	requestReloadCharacter.Name = "RequestReloadCharacter"
+	requestReloadCharacter.Parent = remoteEventsFolder
+	print("✅ RemoteEvent 'RequestReloadCharacter' creado")
+end
+
+-- Handler para RequestReloadCharacter
+requestReloadCharacter.OnServerEvent:Connect(function(player)
+	-- Validar que el jugador existe y puede recargar
+	if player and player.Character then
+		player:LoadCharacter()
+	end
+end)
+
 -- Crea el RemoteEvent para notificar cambios en Wins
 local winsChanged = remoteEventsFolder:FindFirstChild("WinsChanged")
 if not winsChanged then

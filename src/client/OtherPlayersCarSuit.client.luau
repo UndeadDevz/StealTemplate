@@ -22,8 +22,6 @@ local localPlayer = Players.LocalPlayer
 
 -- ========== CONFIGURACIÓN ==========
 local NOMBRE_COCHE_DEFAULT = "CocheMesh"
-
-local ALTURA_AUTO = 0.8
 local RADIO_RUEDA = 1
 
 -- Animaciones
@@ -168,6 +166,11 @@ local function crearCocheParaOtroJugador(player, character)
 
 	-- Obtener EquipType del jugador desde Attribute
 	local equipType = player:GetAttribute("EquipType") or 1
+
+	-- Obtener configuración del EquipType
+	local configActual = CarConfigs[equipType]
+	local alturaAuto = configActual and configActual.AlturaAuto or 0.8
+	local rotacionY = configActual and configActual.Rotacion or 180
 
 	-- Obtener el nombre del modelo según el EquipType usando el sistema híbrido
 	local nombreCoche = CarCustomizationUtils.GetModelName(equipType, CarConfigs)
@@ -341,7 +344,6 @@ local function crearCocheParaOtroJugador(player, character)
 	pcall(copiarApariencia)
 
 	-- ========== APLICAR TEXTURAS SEGÚN CONFIG ==========
-	local configActual = CarConfigs[equipType]
 	if configActual and configActual.Type == "Texture" then
 		local success = CarCustomizationUtils.ApplyTextureConfig(coche, configActual)
 		if success then
@@ -416,8 +418,8 @@ local function crearCocheParaOtroJugador(player, character)
 		return _G.OtherPlayersVolume or 0.65
 	end
 
-	-- Calcular offset de altura
-	local offsetY = -humanoid.HipHeight + (lowerTorso.Size.Y / 2) + ALTURA_AUTO
+	-- Calcular offset de altura usando el valor de la config
+	local offsetY = -humanoid.HipHeight + (lowerTorso.Size.Y / 2) + alturaAuto
 
 	-- Variables para seguimiento
 	local anguloRotacionRueda = 0
@@ -442,9 +444,9 @@ local function crearCocheParaOtroJugador(player, character)
 
 		-- Seguir la posición del jugador
 		local rotacionBase = rootPart.CFrame - rootPart.Position
-		local rotacion180 = CFrame.Angles(0, math.rad(180), 0)
+		local rotacion = CFrame.Angles(0, math.rad(rotacionY), 0)
 
-		carroceria.CFrame = CFrame.new(rootPart.Position + Vector3.new(0, offsetY, 0)) * rotacionBase * rotacion180
+		carroceria.CFrame = CFrame.new(rootPart.Position + Vector3.new(0, offsetY, 0)) * rotacionBase * rotacion
 
 		-- Calcular velocidad
 		local velocidad = rootPart.AssemblyLinearVelocity.Magnitude
@@ -526,12 +528,69 @@ local function crearCocheParaOtroJugador(player, character)
 		otherPlayerCars[player.UserId] = nil
 	end)
 
-	-- Guardar referencia (incluir equipType para poder comparar después)
+	-- Variable para la conexión del Attribute (se define antes para poder referenciarla)
+	local attributeConnection = nil
+
+	-- Guardar referencia (incluir equipType y parámetros para poder comparar después)
 	otherPlayerCars[player.UserId] = {
 		coche = coche,
 		connection = connection,
-		equipType = equipType
+		attributeConnection = nil, -- Se actualiza después
+		equipType = equipType,
+		alturaAuto = alturaAuto,
+		rotacionY = rotacionY
 	}
+
+	-- Escuchar cambios de EquipType via Attribute (más confiable que RemoteEvent)
+	attributeConnection = player:GetAttributeChangedSignal("EquipType"):Connect(function()
+		local newEquipType = player:GetAttribute("EquipType")
+		if not newEquipType or newEquipType == equipType then return end
+
+		print("[OtherPlayersCarSuit] " .. player.Name .. " cambió EquipType: " .. equipType .. " → " .. newEquipType)
+
+		-- Verificar si requiere cambio de modelo
+		local requiresModelChange = CarCustomizationUtils.RequiresModelChange(equipType, newEquipType, CarConfigs)
+
+		if requiresModelChange then
+			-- Recrear coche completo
+			print("[OtherPlayersCarSuit] ⟳ Recreando modelo de " .. player.Name)
+
+			-- Limpiar actual
+			if connection then connection:Disconnect() end
+			if attributeConnection then attributeConnection:Disconnect() end
+			if coche and coche.Parent then coche:Destroy() end
+			if sLow then sLow:Stop() sLow:Destroy() end
+			if sMed then sMed:Stop() sMed:Destroy() end
+			if sHigh then sHigh:Stop() sHigh:Destroy() end
+			otherPlayerCars[player.UserId] = nil
+
+			-- Recrear con nuevo modelo
+			task.defer(function()
+				if player.Character then
+					crearCocheParaOtroJugador(player, player.Character)
+				end
+			end)
+		else
+			-- Solo cambiar texturas
+			local newConfig = CarConfigs[newEquipType]
+			if newConfig and newConfig.Type == "Texture" then
+				local success = CarCustomizationUtils.ApplyTextureConfig(coche, newConfig)
+				if success then
+					-- Actualizar equipType local
+					equipType = newEquipType
+					if otherPlayerCars[player.UserId] then
+						otherPlayerCars[player.UserId].equipType = newEquipType
+					end
+					print("[OtherPlayersCarSuit] ✓ Texturas de " .. player.Name .. " actualizadas")
+				end
+			end
+		end
+	end)
+
+	-- Guardar la conexión del Attribute
+	if otherPlayerCars[player.UserId] then
+		otherPlayerCars[player.UserId].attributeConnection = attributeConnection
+	end
 
 	print("[OtherPlayersCarSuit] ✓ Coche creado para " .. player.Name)
 end
@@ -554,6 +613,9 @@ local function onPlayerAdded(player)
 		if otherPlayerCars[player.UserId] then
 			if otherPlayerCars[player.UserId].connection then
 				otherPlayerCars[player.UserId].connection:Disconnect()
+			end
+			if otherPlayerCars[player.UserId].attributeConnection then
+				otherPlayerCars[player.UserId].attributeConnection:Disconnect()
 			end
 			if otherPlayerCars[player.UserId].coche then
 				otherPlayerCars[player.UserId].coche:Destroy()
@@ -593,6 +655,9 @@ local function onPlayerRemoving(player)
 		if otherPlayerCars[player.UserId].connection then
 			otherPlayerCars[player.UserId].connection:Disconnect()
 		end
+		if otherPlayerCars[player.UserId].attributeConnection then
+			otherPlayerCars[player.UserId].attributeConnection:Disconnect()
+		end
 		if otherPlayerCars[player.UserId].coche then
 			otherPlayerCars[player.UserId].coche:Destroy()
 		end
@@ -614,103 +679,9 @@ for _, player in pairs(Players:GetPlayers()) do
 	end
 end
 
--- Escuchar cambios de EquipType de otros jugadores (SISTEMA HÍBRIDO)
-local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
-local changeCarModel = remoteEvents:WaitForChild("ChangeCarModel")
-
-changeCarModel.OnClientEvent:Connect(function(targetPlayer, newEquipType)
-	-- Ignorar si el cambio es para el jugador local
-	if targetPlayer == localPlayer then
-		return
-	end
-
-	print("[OtherPlayersCarSuit] " .. targetPlayer.Name .. " cambió a EquipType " .. newEquipType)
-
-	local playerData = otherPlayerCars[targetPlayer.UserId]
-	if not playerData then
-		-- No tenemos su coche renderizado, ignorar
-		return
-	end
-
-	local currentEquipType = playerData.equipType
-
-	-- Verificar si ya tiene este EquipType
-	if currentEquipType == newEquipType then
-		print("[OtherPlayersCarSuit] " .. targetPlayer.Name .. " ya tiene EquipType " .. newEquipType)
-		return
-	end
-
-	-- ═══════════════════════════════════════════════════════════════════
-	-- DECISIÓN: ¿Requiere cambio de modelo o solo texturas?
-	-- ═══════════════════════════════════════════════════════════════════
-	local requiresReload = CarCustomizationUtils.RequiresModelChange(
-		currentEquipType,
-		newEquipType,
-		CarConfigs
-	)
-
-	if requiresReload then
-		-- ═══════════════════════════════════════════════════════════════
-		-- CASO 1: CAMBIO DE MODELO COMPLETO (destruir y recrear)
-		-- ═══════════════════════════════════════════════════════════════
-		print("[OtherPlayersCarSuit] ⟳ " .. targetPlayer.Name .. " requiere recrear modelo")
-
-		-- Destruir coche actual
-		if playerData.connection then
-			playerData.connection:Disconnect()
-		end
-		if playerData.coche then
-			playerData.coche:Destroy()
-		end
-		otherPlayerCars[targetPlayer.UserId] = nil
-
-		-- Recrear con el nuevo modelo
-		if targetPlayer.Character then
-			task.wait(0.1)
-			crearCocheParaOtroJugador(targetPlayer, targetPlayer.Character)
-		end
-	else
-		-- ═══════════════════════════════════════════════════════════════
-		-- CASO 2: SOLO CAMBIO DE TEXTURAS (instantáneo)
-		-- ═══════════════════════════════════════════════════════════════
-		print("[OtherPlayersCarSuit] ✨ " .. targetPlayer.Name .. " cambio instantáneo de texturas")
-
-		local newConfig = CarConfigs[newEquipType]
-		if not newConfig or newConfig.Type ~= "Texture" then
-			warn("[OtherPlayersCarSuit] ⚠ Config inválida para EquipType " .. newEquipType)
-			return
-		end
-
-		local coche = playerData.coche
-		if not coche or not coche.Parent then
-			warn("[OtherPlayersCarSuit] ⚠ Coche de " .. targetPlayer.Name .. " no existe")
-			return
-		end
-
-		-- Aplicar texturas dinámicamente SIN recrear
-		local success = CarCustomizationUtils.ApplyTextureConfig(coche, newConfig)
-		if success then
-			-- Actualizar el EquipType guardado
-			playerData.equipType = newEquipType
-			print("[OtherPlayersCarSuit] ✓ Texturas de " .. targetPlayer.Name .. " cambiadas exitosamente")
-		else
-			warn("[OtherPlayersCarSuit] ⚠ Error aplicando texturas a " .. targetPlayer.Name .. ", recreando coche")
-			-- Fallback: recrear si falla
-			if playerData.connection then
-				playerData.connection:Disconnect()
-			end
-			if playerData.coche then
-				playerData.coche:Destroy()
-			end
-			otherPlayerCars[targetPlayer.UserId] = nil
-
-			if targetPlayer.Character then
-				task.wait(0.1)
-				crearCocheParaOtroJugador(targetPlayer, targetPlayer.Character)
-			end
-		end
-	end
-end)
+-- NOTA: Los cambios de EquipType de otros jugadores ahora se detectan
+-- via GetAttributeChangedSignal dentro de crearCocheParaOtroJugador
+-- Esto es más confiable que el RemoteEvent porque los Attributes se replican automáticamente
 
 -- ========== MANEJO DE STREAMING ==========
 -- Cuando un jugador sale del rango de streaming y vuelve, recrear su coche
