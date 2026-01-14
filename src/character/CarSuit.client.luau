@@ -295,6 +295,7 @@ local function setupCoche(equipType)
 	local nombreCoche = config.ModelName
 	local alturaAuto = config.AlturaAuto or 0.8
 	local rotacionY = config.Rotacion or 180
+	local wheelRotation = config.WheelRotation or Vector3.new(0, 0, 0)
 
 	-- Calcular offset de altura
 	estadoCoche.offsetY = -humanoid.HipHeight + (lowerTorso.Size.Y / 2) + alturaAuto
@@ -554,13 +555,25 @@ local function setupCoche(equipType)
 		local velocidad = rootPart.AssemblyLinearVelocity.Magnitude
 		local direccionRueda = ((rotacionY < 90) or (rotacionY > 270)) and -1 or 1
 		estadoCoche.anguloRotacionRueda = estadoCoche.anguloRotacionRueda + (velocidad / RADIO_RUEDA) * dt * direccionRueda
+		
+		local isWheelRotated = wheelRotation ~= Vector3.new(0, 0, 0)
 
-		for _, motorData in pairs(estadoCoche.motoresRuedasDelanteras) do
-			motorData.motor.C0 = motorData.offset * CFrame.Angles(estadoCoche.anguloRotacionRueda, 0, 0)
-		end
+		if isWheelRotated then
+			for _, motorData in pairs(estadoCoche.motoresRuedasDelanteras) do
+				motorData.motor.C0 = motorData.offset * CFrame.Angles(0,estadoCoche.anguloRotacionRueda, 0)
+			end
 
-		for _, motorData in pairs(estadoCoche.motoresRuedasTraseras) do
-			motorData.motor.C0 = motorData.offset * CFrame.Angles(estadoCoche.anguloRotacionRueda, 0, 0)
+			for _, motorData in pairs(estadoCoche.motoresRuedasTraseras) do
+				motorData.motor.C0 = motorData.offset * CFrame.Angles(0,estadoCoche.anguloRotacionRueda, 0)
+			end
+		else
+				for _, motorData in pairs(estadoCoche.motoresRuedasDelanteras) do
+			motorData.motor.C0 = motorData.offset * CFrame.Angles(estadoCoche.anguloRotacionRueda,0, 0)
+			end
+
+			for _, motorData in pairs(estadoCoche.motoresRuedasTraseras) do
+			motorData.motor.C0 = motorData.offset * CFrame.Angles(estadoCoche.anguloRotacionRueda,0, 0)
+			end
 		end
 	end)
 

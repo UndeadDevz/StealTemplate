@@ -23,11 +23,20 @@
 export type TextureConfig = {
 	Type: "Texture",
 	TextureID: string,  -- Asset ID de Roblox (ej: "rbxassetid://123456789")
+	ExpBase: number,
+	ModelName: string,
+	AlturaAuto: number,
+	Rotacion: number,
+	WheelRotation: Vector3,
 }
 
 export type ModelConfig = {
 	Type: "Model",
 	ModelName: string,
+	ExpBase: number,
+	AlturaAuto: number,
+	Rotacion: number,
+	WheelRotation: Vector3,
 }
 
 export type CarConfig = TextureConfig | ModelConfig
@@ -40,6 +49,7 @@ export type CarConfig = TextureConfig | ModelConfig
 local DEFAULT_MODEL = "CocheMesh"
 local DEFAULT_ALTURA = 0.8
 local DEFAULT_ROTACION = 180
+local DEFAULT_WHEEL_ROTATION = Vector3.new(0, 0, 0)
 
 local CarConfigs: { [number]: CarConfig } = {
 	[1] = {
@@ -49,6 +59,7 @@ local CarConfigs: { [number]: CarConfig } = {
 		ModelName = DEFAULT_MODEL,
 		AlturaAuto = DEFAULT_ALTURA,
 		Rotacion = DEFAULT_ROTACION,
+		WheelRotation = DEFAULT_WHEEL_ROTATION,
 	},
 	[2] = {
 		Type = "Texture",
@@ -57,6 +68,7 @@ local CarConfigs: { [number]: CarConfig } = {
 		ModelName = DEFAULT_MODEL,
 		AlturaAuto = DEFAULT_ALTURA,
 		Rotacion = DEFAULT_ROTACION,
+		WheelRotation = DEFAULT_WHEEL_ROTATION,
 	},
 	[3] = {
 		Type = "Texture",
@@ -65,6 +77,7 @@ local CarConfigs: { [number]: CarConfig } = {
 		ModelName = DEFAULT_MODEL,
 		AlturaAuto = DEFAULT_ALTURA,
 		Rotacion = DEFAULT_ROTACION,
+		WheelRotation = DEFAULT_WHEEL_ROTATION,
 	},
 	[4] = {
 		Type = "Texture",
@@ -73,6 +86,7 @@ local CarConfigs: { [number]: CarConfig } = {
 		ModelName = DEFAULT_MODEL,
 		AlturaAuto = DEFAULT_ALTURA,
 		Rotacion = DEFAULT_ROTACION,
+		WheelRotation = DEFAULT_WHEEL_ROTATION,
 	},
 	[5] = {
 		Type = "Texture",
@@ -81,6 +95,7 @@ local CarConfigs: { [number]: CarConfig } = {
 		ModelName = DEFAULT_MODEL,
 		AlturaAuto = DEFAULT_ALTURA,
 		Rotacion = DEFAULT_ROTACION,
+		WheelRotation = DEFAULT_WHEEL_ROTATION,
 	},
 	[6] = {
 		Type = "Texture",
@@ -89,6 +104,7 @@ local CarConfigs: { [number]: CarConfig } = {
 		ModelName = DEFAULT_MODEL,
 		AlturaAuto = DEFAULT_ALTURA,
 		Rotacion = DEFAULT_ROTACION,
+		WheelRotation = DEFAULT_WHEEL_ROTATION,
 	},
 	[7] = {
 		Type = "Texture",
@@ -97,6 +113,7 @@ local CarConfigs: { [number]: CarConfig } = {
 		ModelName = DEFAULT_MODEL,
 		AlturaAuto = DEFAULT_ALTURA,
 		Rotacion = DEFAULT_ROTACION,
+		WheelRotation = DEFAULT_WHEEL_ROTATION,
 	},
 	[8] = {
 		Type = "Texture",
@@ -105,6 +122,7 @@ local CarConfigs: { [number]: CarConfig } = {
 		ModelName = DEFAULT_MODEL,
 		AlturaAuto = DEFAULT_ALTURA,
 		Rotacion = DEFAULT_ROTACION,
+		WheelRotation = DEFAULT_WHEEL_ROTATION,
 	},
 	[9] = {
 		Type = "Model",
@@ -112,6 +130,7 @@ local CarConfigs: { [number]: CarConfig } = {
 		ExpBase = 50000,
 		AlturaAuto = 4,
 		Rotacion = 0,
+		WheelRotation = Vector3.new(-90, -90, 0),
 	},
 }
 

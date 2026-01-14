@@ -171,6 +171,7 @@ local function crearCocheParaOtroJugador(player, character)
 	local configActual = CarConfigs[equipType]
 	local alturaAuto = configActual and configActual.AlturaAuto or 0.8
 	local rotacionY = configActual and configActual.Rotacion or 180
+	local wheelRotation = configActual and configActual.WheelRotation or Vector3.new(0, 0, 0)
 
 	-- Obtener el nombre del modelo según el EquipType usando el sistema híbrido
 	local nombreCoche = CarCustomizationUtils.GetModelName(equipType, CarConfigs)
@@ -500,16 +501,32 @@ local function crearCocheParaOtroJugador(player, character)
 		anguloRotacionRueda = anguloRotacionRueda + (velocidad / RADIO_RUEDA) * dt * direccionRueda
 
 		-- Actualizar ruedas
-		for _, motorData in pairs(motoresRuedasDelanteras) do
-			local motor = motorData.motor
-			local offset = motorData.offset
-			motor.C0 = offset * CFrame.Angles(anguloRotacionRueda, 0, 0)
-		end
+		local isWheelRotated = wheelRotation ~= Vector3.new(0, 0, 0)
 
-		for _, motorData in pairs(motoresRuedasTraseras) do
-			local motor = motorData.motor
-			local offset = motorData.offset
-			motor.C0 = offset * CFrame.Angles(anguloRotacionRueda, 0, 0)
+		if isWheelRotated then
+			for _, motorData in pairs(motoresRuedasDelanteras) do
+				local motor = motorData.motor
+				local offset = motorData.offset
+				motor.C0 = offset * CFrame.Angles( 0,anguloRotacionRueda, 0)
+			end
+
+			for _, motorData in pairs(motoresRuedasTraseras) do
+				local motor = motorData.motor
+				local offset = motorData.offset
+				motor.C0 = offset * CFrame.Angles( 0,anguloRotacionRueda, 0)
+			end
+		else
+			for _, motorData in pairs(motoresRuedasDelanteras) do
+				local motor = motorData.motor
+				local offset = motorData.offset
+				motor.C0 = offset * CFrame.Angles(anguloRotacionRueda, 0, 0)
+			end
+
+			for _, motorData in pairs(motoresRuedasTraseras) do
+				local motor = motorData.motor
+				local offset = motorData.offset
+				motor.C0 = offset * CFrame.Angles(anguloRotacionRueda, 0, 0)
+			end
 		end
 
 		-- Actualizar CFrame anterior
