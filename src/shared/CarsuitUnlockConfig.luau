@@ -21,52 +21,62 @@ export type CarsuitUnlockInfo = {
 	DevProductId: number?, -- Solo para tipo Robux
 	EventId: string?, -- Solo para tipo Event
 	DisplayName: string?, -- Nombre para mostrar en UI
+	DisplayImg: string?, -- Imagen para mostrar en UI
 }
 
 local CarsuitUnlockConfig: { [number]: CarsuitUnlockInfo } = {
 	[1] = {
 		UnlockType = "Free",
 		DisplayName = "Starter Car",
+		DisplayImg="rbxassetid://105624196776827"
 	},
 	[2] = {
 		UnlockType = "Wins",
 		Cost = 5,
 		DisplayName = "Racer",
+		DisplayImg="rbxassetid://136622042829409"
 	},
 	[3] = {
 		UnlockType = "Wins",
 		Cost = 20,
 		DisplayName = "Speedster",
+		DisplayImg="rbxassetid://96137634673886"
 	},
 	[4] = {
 		UnlockType = "Wins",
 		Cost = 100,
 		DisplayName = "Turbo",
+		DisplayImg="rbxassetid://74314294105130"
 	},
 	[5] = {
 		UnlockType = "Wins",
 		Cost = 500,
 		DisplayName = "Lightning",
+		DisplayImg="rbxassetid://123658408277980"
 	},
 	[6] = {
 		UnlockType = "Wins",
 		Cost = 2500,
 		DisplayName = "Thunder",
+		DisplayImg="rbxassetid://129150766166157"
 	},
 	[7] = {
 		UnlockType = "Wins",
 		Cost = 12000,
 		DisplayName = "Storm",
+		DisplayImg="rbxassetid://89756814598805"
 	},
 	[8] = {
 		UnlockType = "Wins",
 		Cost = 50000,
 		DisplayName = "Hurricane",
+		DisplayImg="rbxassetid://84554461709962"
 	},
 	[9] = {
-		UnlockType = "GamePass",
-		GamePassId = 0, -- TODO: Reemplazar con el ID real del GamePass
+		UnlockType = "Event",
+		EventId = "SharkTruckEvent", -- TODO: Reemplazar con el ID real del evento
 		DisplayName = "SharkTruck",
+		DisplayImg="rbxassetid://136877531645152"
 	},
 }
 

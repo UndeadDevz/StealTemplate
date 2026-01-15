@@ -72,6 +72,12 @@ local function CreateCarsuitCard(carsuitData)
 		carName.Text = carsuitData.displayName or ("Car " .. carsuitData.equipType)
 	end
 
+	-- Imagen del coche
+	local carImage = card:FindFirstChild("CarImage")
+	if carImage then
+		carImage.Image = carsuitData.displayImg or ""
+	end
+
 	-- Label de equipado
 	local equippedLabel = card:FindFirstChild("EquippedLabel")
 	if equippedLabel then

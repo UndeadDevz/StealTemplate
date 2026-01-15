@@ -154,6 +154,7 @@ getAllCarsuits.OnServerInvoke = function(player)
 		table.insert(carsuits, {
 			equipType = equipType,
 			displayName = unlockInfo.DisplayName or ("Carsuit " .. equipType),
+			displayImg = unlockInfo.DisplayImg or "",
 			unlockType = unlockInfo.UnlockType,
 			cost = unlockInfo.Cost,
 			gamePassId = unlockInfo.GamePassId,
