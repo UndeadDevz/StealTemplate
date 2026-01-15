@@ -15,8 +15,8 @@ return {
 	-- Potions
 	SpeedPotionCount = 0,
 	WinsPotionCount = 0,
-	SpeedPotionEndTime = 0,
-	WinsPotionEndTime = 0,
+	WinsPotionRemaining = 0,
+	SpeedPotionRemaining = 0,
 
 	-- Configuraciones de UI (guardadas persistentemente)
 	Settings = {
