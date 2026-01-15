@@ -49,6 +49,14 @@ while true do
 				local baseValue = baseExp * rebirthMult
 				local finalExp = baseValue * (1 + speedBoost)
 
+				-- Apply SpeedPotion multiplier
+				local speedRemaining = DataManager.GetStat(player, "SpeedPotionRemaining") or 0
+				local expMultiplier = (speedRemaining > 0) and 2 or 1
+				if expMultiplier > 1 then
+					print("SpeedPotion active for " .. player.Name .. " in WalkTraining, remaining: " .. speedRemaining .. ", multiplier: " .. expMultiplier)
+				end
+				finalExp = finalExp * expMultiplier
+
 				DataManager.AddStat(player, "EXP", finalExp)
 				DataManager.AddStat(player, "TotalEXP", finalExp)
 				DataManager.CheckLevelUp(player)

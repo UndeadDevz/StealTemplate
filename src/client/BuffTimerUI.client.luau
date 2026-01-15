@@ -16,18 +16,22 @@ winEffectFrame.Visible = false
 local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local getStat = remoteEvents:WaitForChild("GetStat")
 
-local buffActivatedEvent = remoteEvents:WaitForChild("BuffActivated")
+local buffActivatedEvent = remoteEvents:WaitForChild("BuffActivated",5)
 
 local activeBuffs = {}  -- {potionType: endTime}
 
 local function LoadExistingBuffs()
 	local speedRemaining = getStat:InvokeServer("SpeedPotionRemaining") or 0
+	print("SpeedPotion remaining: " .. speedRemaining)
 	if speedRemaining > 0 then
 		activeBuffs["SpeedPotion"] = speedRemaining
+		print("Loaded SpeedPotion remaining: " .. speedRemaining)
 	end
 	local winsRemaining = getStat:InvokeServer("WinsPotionRemaining") or 0
+	print("WinsPotion remaining: " .. winsRemaining)
 	if winsRemaining > 0 then
 		activeBuffs["WinsPotion"] = winsRemaining
+		print("Loaded WinsPotion remaining: " .. winsRemaining)
 	end
 end
 
@@ -49,17 +53,22 @@ local function UpdateTimers()
 				if remaining > 0 then
 					counterLabel.Text = FormatTime(remaining)
 					frame.Visible = true
+					print(potionType .. " frame visible, time: " .. FormatTime(remaining))
 				else
 					frame.Visible = false
 					activeBuffs[potionType] = nil
+					print(potionType .. " expired")
 				end
+			else
+				print("Counter not found for " .. potionType)
 			end
 		end
 	end
 end
 
-buffActivatedEvent.OnClientEvent:Connect(function(potionType, endTime)
-	activeBuffs[potionType] = endTime
+buffActivatedEvent.OnClientEvent:Connect(function(potionType, remaining)
+	print("BuffActivated received: " .. potionType .. " remaining: " .. remaining)
+	activeBuffs[potionType] = remaining
 end)
 
 -- Load existing buffs on join

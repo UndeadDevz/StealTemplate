@@ -20,6 +20,12 @@ if not remoteEventsFolder then
 	remoteEventsFolder.Parent = ReplicatedStorage
 end
 
+if not remoteFunctionsFolder then
+	remoteFunctionsFolder = Instance.new("Folder")
+	remoteFunctionsFolder.Name = "RemoteFunctions"
+	remoteFunctionsFolder.Parent = ReplicatedStorage
+end
+
 -- Crea el RemoteEvent para efectos de nivel
 local efectoLvlUp = remoteEventsFolder:FindFirstChild("EfectoLvlUp")
 if not efectoLvlUp then
