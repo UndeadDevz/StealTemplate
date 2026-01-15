@@ -78,6 +78,12 @@ local CarsuitUnlockConfig: { [number]: CarsuitUnlockInfo } = {
 		DisplayName = "SharkTruck",
 		DisplayImg="rbxassetid://136877531645152"
 	},
+	[10] = {
+		UnlockType = "Event",
+		EventId = "DailyEvent", -- TODO: Reemplazar con el ID real del evento
+		DisplayName = "Lightning Car",
+		DisplayImg="rbxassetid://116618353488685"
+	},	
 }
 
 -- Obtener informacion de desbloqueo para un carsuit

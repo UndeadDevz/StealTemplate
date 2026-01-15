@@ -132,6 +132,15 @@ local CarConfigs: { [number]: CarConfig } = {
 		Rotacion = 0,
 		WheelRotation = Vector3.new(-90, -90, 0),
 	},
+	[10] = {
+		Type = "Texture",
+		TextureID = "rbxassetid://100494096447046",
+		ExpBase = 500,
+		ModelName = DEFAULT_MODEL,
+		AlturaAuto = DEFAULT_ALTURA,
+		Rotacion = DEFAULT_ROTACION,
+		WheelRotation = DEFAULT_WHEEL_ROTATION,
+	},
 }
 
 return CarConfigs
