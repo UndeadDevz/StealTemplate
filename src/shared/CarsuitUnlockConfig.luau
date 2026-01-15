@@ -33,43 +33,43 @@ local CarsuitUnlockConfig: { [number]: CarsuitUnlockInfo } = {
 	[2] = {
 		UnlockType = "Wins",
 		Cost = 5,
-		DisplayName = "Racer",
+		DisplayName = "Retro Car",
 		DisplayImg="rbxassetid://136622042829409"
 	},
 	[3] = {
 		UnlockType = "Wins",
 		Cost = 20,
-		DisplayName = "Speedster",
+		DisplayName = "Cow Car",
 		DisplayImg="rbxassetid://96137634673886"
 	},
 	[4] = {
 		UnlockType = "Wins",
 		Cost = 100,
-		DisplayName = "Turbo",
+		DisplayName = "Roblox Car",
 		DisplayImg="rbxassetid://74314294105130"
 	},
 	[5] = {
 		UnlockType = "Wins",
 		Cost = 500,
-		DisplayName = "Lightning",
+		DisplayName = "Racer Car",
 		DisplayImg="rbxassetid://123658408277980"
 	},
 	[6] = {
 		UnlockType = "Wins",
 		Cost = 2500,
-		DisplayName = "Thunder",
+		DisplayName = "Nature Car",
 		DisplayImg="rbxassetid://129150766166157"
 	},
 	[7] = {
 		UnlockType = "Wins",
 		Cost = 12000,
-		DisplayName = "Storm",
+		DisplayName = "Magma Car",
 		DisplayImg="rbxassetid://89756814598805"
 	},
 	[8] = {
 		UnlockType = "Wins",
 		Cost = 50000,
-		DisplayName = "Hurricane",
+		DisplayName = "Galaxy Car",
 		DisplayImg="rbxassetid://84554461709962"
 	},
 	[9] = {
