@@ -8,6 +8,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local NumberFormatter = require(ReplicatedStorage.Shared.Utils.NumberFormatter)
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -93,21 +94,23 @@ local function CreateCarsuitCard(carsuitData)
 
 	-- Texto de costo o estado
 	local textLabel = card:FindFirstChild("TextLabel")
+	local imageLabel = card:FindFirstChild("ImageLabel")
 	if textLabel then
 		if carsuitData.isEquipped then
-			textLabel.Text = "EQUIPADO"
-			textLabel.Visible = true
-		elseif carsuitData.isUnlocked then
-			textLabel.Text = ""
 			textLabel.Visible = false
+			imageLabel.Visible = false
+		elseif carsuitData.isUnlocked then
+			textLabel.Visible = false
+			imageLabel.Visible = false
 		elseif carsuitData.unlockType == "Wins" then
-			textLabel.Text = carsuitData.cost .. " Wins"
+			textLabel.Text = NumberFormatter.Format(carsuitData.cost)
 			textLabel.Visible = true
+			imageLabel.Visible = true
 		elseif carsuitData.unlockType == "GamePass" or carsuitData.unlockType == "Robux" then
-			textLabel.Text = "DISPONIBLE EN SHOP"
+			textLabel.Text = "See in Shop"
 			textLabel.Visible = true
 		elseif carsuitData.unlockType == "Event" then
-			textLabel.Text = "EVENTO ESPECIAL"
+			textLabel.Text = "Event Item"
 			textLabel.Visible = true
 		else
 			textLabel.Visible = false
@@ -127,16 +130,15 @@ local function CreateCarsuitCard(carsuitData)
 		if carsuitData.isEquipped then
 			actionButton.Visible = false
 		elseif carsuitData.isUnlocked then
-			actionButton.Text = "EQUIPAR"
-			actionButton.Visible = true
+			actionButton.Visible = false
 		elseif carsuitData.unlockType == "Wins" then
-			actionButton.Text = "COMPRAR"
+			actionButton.Text = "BUY"
 			actionButton.Visible = true
 		elseif carsuitData.unlockType == "GamePass" or carsuitData.unlockType == "Robux" then
-			actionButton.Text = "IR AL SHOP"
+			actionButton.Text = "SEE IN SHOP"
 			actionButton.Visible = true
 		elseif carsuitData.unlockType == "Event" then
-			actionButton.Text = "VER INFO"
+			actionButton.Text = "SEE INFO"
 			actionButton.Visible = true
 		else
 			actionButton.Visible = false
