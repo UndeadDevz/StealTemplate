@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Crea una carpeta para organizar los eventos
 local remoteEventsFolder = ReplicatedStorage:FindFirstChild("RemoteEvents")
+local remoteFunctionsFolder = ReplicatedStorage:FindFirstChild("RemoteFunctions")
 if not remoteEventsFolder then
 	remoteEventsFolder = Instance.new("Folder")
 	remoteEventsFolder.Name = "RemoteEvents"
@@ -260,4 +261,45 @@ claimGroupReward.OnServerInvoke = function(player)
 
 	print("✅ " .. player.Name .. " reclamó recompensa de grupo: " .. GROUP_REWARD_EXP .. " EXP")
 	return { success = true, message = "¡Recibiste " .. GROUP_REWARD_EXP .. " EXP!", alreadyClaimed = false, inGroup = true }
+end
+
+-- Crea el RemoteFunction para usar pociones
+local usePotion = remoteEventsFolder:FindFirstChild("UsePotion")
+if not usePotion then
+	usePotion = Instance.new("RemoteFunction")
+	usePotion.Name = "UsePotion"
+	usePotion.Parent = remoteFunctionsFolder
+	print("✅ RemoteFunction 'UsePotion' creado")
+end
+
+-- Handler para UsePotion
+usePotion.OnServerInvoke = function(player, potionType)
+	local countStat = potionType .. "Count"
+	local endTimeStat = potionType .. "EndTime"
+	local duration = 300  -- 5 minutes
+
+	local currentCount = DataManager.GetStat(player, countStat) or 0
+	if currentCount > 0 then
+		DataManager.AddStat(player, countStat, -1)
+		local currentEndTime = DataManager.GetStat(player, endTimeStat) or 0
+		local newEndTime = math.max(currentEndTime, os.time()) + duration
+		DataManager.UpdateStat(player, endTimeStat, newEndTime)
+		
+		-- Notify client
+		local buffActivatedEvent = remoteEventsFolder:FindFirstChild("BuffActivated")
+		if buffActivatedEvent then
+			buffActivatedEvent:FireClient(player, potionType, newEndTime)
+		end
+		return true
+	end
+	return false
+end
+
+-- Crea el RemoteEvent para activar buff
+local buffActivated = remoteEventsFolder:FindFirstChild("BuffActivated")
+if not buffActivated then
+	buffActivated = Instance.new("RemoteEvent")
+	buffActivated.Name = "BuffActivated"
+	buffActivated.Parent = remoteEventsFolder
+	print("✅ RemoteEvent 'BuffActivated' creado")
 end

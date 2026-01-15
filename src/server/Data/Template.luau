@@ -12,6 +12,12 @@ return {
 	TotalEXP = 0, -- EXP acumulada total (nunca se resta)
 	GroupRewardClaimed = false, -- true si ya reclamó la recompensa por unirse al grupo
 
+	-- Potions
+	SpeedPotionCount = 0,
+	WinsPotionCount = 0,
+	SpeedPotionEndTime = 0,
+	WinsPotionEndTime = 0,
+
 	-- Configuraciones de UI (guardadas persistentemente)
 	Settings = {
 		Sound = 1, -- Volumen de sonido (0-1)

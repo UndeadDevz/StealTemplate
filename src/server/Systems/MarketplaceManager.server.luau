@@ -44,6 +44,11 @@ local PRODUCTOS = {
 
 	-- [[ REBIRTH KEEP LEVEL (Consumible) ]] --
 	[3505671943] = { Type = "RebirthKeepLevel", Value = 1 },  -- ⚠️ REEMPLAZAR 0 CON PRODUCT ID REAL
+
+	-- [[ POCIONES (Consumibles) ]] --
+	[3513445425] = { Type = "Potion", Value = "SpeedPotion" },  -- Speed Potion
+	[3513445564] = { Type = "Potion", Value = "WinsPotion" },   -- Wins Potion
+	[3513445863] = { Type = "Potion", Value = "BundlePotion" }, -- Bundle (5 Speed + 5 Wins)
 }
 
 local function ProcessReceipt(receiptInfo)
@@ -97,6 +102,21 @@ local function ProcessReceipt(receiptInfo)
 				warn("[MarketplaceManager] _G.RebirthKeepLevel no está disponible")
 				return Enum.ProductPurchaseDecision.NotProcessedYet
 			end
+
+		-- LOGICA PARA POCIONES
+		elseif data.Type == "Potion" then
+			if data.Value == "SpeedPotion" then
+				DataManager.AddToInventory(player, "SpeedPotion", 1)
+				print("🧪 Speed Potion comprado por:", player.Name)
+			elseif data.Value == "WinsPotion" then
+				DataManager.AddToInventory(player, "WinsPotion", 1)
+				print("🏆 Wins Potion comprado por:", player.Name)
+			elseif data.Value == "BundlePotion" then
+				DataManager.AddToInventory(player, "SpeedPotion", 100)
+				DataManager.AddToInventory(player, "WinsPotion", 100)
+				print("📦 Potion Bundle comprado por:", player.Name)
+			end
+			return Enum.ProductPurchaseDecision.PurchaseGranted
 		end
 
 	end

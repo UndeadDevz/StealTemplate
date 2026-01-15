@@ -155,6 +155,11 @@ while true do
 					local baseValue = baseExp * zonaMult * rebirthMult
 					local expGanada = baseValue * (1 + speedBoost)
 
+					-- Apply SpeedPotion multiplier
+					local speedPotionEndTime = DataManager.GetStat(player, "SpeedPotionEndTime") or 0
+					local expMultiplier = (os.time() < speedPotionEndTime) and 2 or 1
+					expGanada = expGanada * expMultiplier
+
 					DataManager.AddStat(player, "EXP", expGanada)
 					DataManager.AddStat(player, "TotalEXP", expGanada)
 					DataManager.CheckLevelUp(player)

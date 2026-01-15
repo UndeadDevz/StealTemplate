@@ -131,6 +131,11 @@ local function SetupZone(zona)
 				end
 			end
 
+			-- Apply WinsPotion multiplier
+			local winsPotionEndTime = DataManager.GetStat(player, "WinsPotionEndTime") or 0
+			local winsMultiplier = (os.time() < winsPotionEndTime) and 2 or 1
+			finalWins = finalWins * winsMultiplier
+
 			-- Dar Wins
 			DataManager.AddStat(player, "Wins", finalWins)
 			print("🏆 " .. player.Name .. " recibió " .. finalWins .. " Win(s)!")

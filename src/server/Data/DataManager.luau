@@ -197,4 +197,10 @@ function DataManager.UpdateSettings(player: Player, settings: {[string]: any})
 	return true
 end
 
+-- Agrega pociones al inventario del jugador
+function DataManager.AddToInventory(player: Player, potionType: string, amount: number)
+	local countStat = potionType .. "Count"
+	DataManager.AddStat(player, countStat, amount)
+end
+
 return DataManager
