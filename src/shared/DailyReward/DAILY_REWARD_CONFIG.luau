@@ -4,7 +4,7 @@ local DAILY_REWARD_CONFIG  = {
 	ENABLED = true,
 
 	-- This key will store all players streak data (once you input your own don't change it.)
-	DATASTORE_KEY = "Testing_DailyRewardDataStore",
+	DATASTORE_KEY = "Testing1_DailyRewardDataStore",
 	
 	-- Total number of days for redeemable rewards (default = 7)
 	MAX_DAYS = 7, 												
@@ -36,7 +36,7 @@ local DAILY_REWARD_CONFIG  = {
 	},
 	
 	-- What each day will show on the frames
-	-- reward_type: "Wins", "Speed", or "Special"
+	-- reward_type: "Wins", "Speed", "Potion", "Bundle", or "Special"
 	DAY_PRESETS = {
 
 		["Day 1"] = {
@@ -54,31 +54,33 @@ local DAILY_REWARD_CONFIG  = {
 		},
 
 		["Day 3"] = {
-			reward_type = "Wins",
-			reward_amount = 0, -- TODO: configurar
-			reward_text = "???",
-			reward_image_ID = "rbxasset://textures/ui/GuiImagePlaceholder.png",
+			reward_type = "Potion",
+			potion_type = "SpeedPotion",
+			reward_amount = 2,
+			reward_text = "+2 Speed Potions",
+			reward_image_ID = "rbxassetid://103082209641495",
 		},
 
 		["Day 4"] = {
-			reward_type = "Speed",
-			reward_amount = 0, -- TODO: configurar
-			reward_text = "???",
-			reward_image_ID = "rbxasset://textures/ui/GuiImagePlaceholder.png",
+			reward_type = "Potion",
+			potion_type = "WinsPotion",
+			reward_amount = 2,
+			reward_text = "+2 Wins Potions",
+			reward_image_ID = "rbxassetid://81728577490626",
 		},
 
 		["Day 5"] = {
-			reward_type = "Wins",
-			reward_amount = 0, -- TODO: configurar
-			reward_text = "???",
-			reward_image_ID = "rbxasset://textures/ui/GuiImagePlaceholder.png",
+			reward_type = "Speed",
+			reward_amount = 10000000,
+			reward_text = "+10M Speed",
+			reward_image_ID = "rbxassetid://130057163043800",
 		},
 
 		["Day 6"] = {
-			reward_type = "Speed",
-			reward_amount = 0, -- TODO: configurar
-			reward_text = "???",
-			reward_image_ID = "rbxasset://textures/ui/GuiImagePlaceholder.png",
+			reward_type = "Bundle",
+			reward_amount = 10,
+			reward_text = "+10 Potions",
+			reward_image_ID = "rbxassetid://75123681218137",
 		},
 
 		["Day 7"] = {

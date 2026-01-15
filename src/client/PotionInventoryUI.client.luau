@@ -31,8 +31,6 @@ local function UpdateCounts()
 		winsCountLabel.Text = "(" .. winsCount .. ")"
 	end
 	
-	speedButton.Visible = speedCount > 0
-	winsButton.Visible = winsCount > 0
 end
 
 speedButton.MouseButton1Click:Connect(function()

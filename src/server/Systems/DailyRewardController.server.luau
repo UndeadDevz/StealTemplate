@@ -94,6 +94,14 @@ function GivePlayerReward(player, dayID)
 	elseif rewardType == "Special" then
 		-- TODO: implementar recompensa especial del día 7
 		warn("Special reward not implemented yet for Day " .. dayID)
+	elseif rewardType == "Potion" then
+		local potionType = dayPreset.potion_type or "SpeedPotion"
+		DataManager.AddToInventory(player, potionType, rewardAmount)
+		print("[DailyReward] Gave " .. rewardAmount .. " " .. potionType .. " to " .. player.Name .. " (Day " .. dayID .. ")")
+	elseif rewardType == "Bundle" then
+		DataManager.AddToInventory(player, "SpeedPotion", rewardAmount)
+		DataManager.AddToInventory(player, "WinsPotion", rewardAmount)
+		print("[DailyReward] Gave " .. rewardAmount .. " SpeedPotion and " .. rewardAmount .. " WinsPotion to " .. player.Name .. " (Day " .. dayID .. ")")
 	end
 end
 
