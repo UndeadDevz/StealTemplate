@@ -85,9 +85,9 @@ local DAILY_REWARD_CONFIG  = {
 
 		["Day 7"] = {
 			reward_type = "Special",
-			reward_amount = 0, -- TODO: implementar recompensa especial
-			reward_text = "???",
-			reward_image_ID = "rbxasset://textures/ui/GuiImagePlaceholder.png",
+			reward_amount = 0,
+			reward_text = "Lightning Car",
+			reward_image_ID = "rbxassetid://116618353488685",
 		},
 
 	}

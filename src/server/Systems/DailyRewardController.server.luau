@@ -82,6 +82,8 @@ function GivePlayerReward(player, dayID)
 		return
 	end
 
+	local profile = DataManager.Profiles[player]
+
 	if rewardType == "Wins" then
 		DataManager.AddStat(player, "Wins", rewardAmount)
 		print("[DailyReward] Gave " .. rewardAmount .. " Wins to " .. player.Name .. " (Day " .. dayID .. ")")
@@ -92,8 +94,21 @@ function GivePlayerReward(player, dayID)
 		DataManager.CheckLevelUp(player)
 		print("[DailyReward] Gave " .. rewardAmount .. " Speed/EXP to " .. player.Name .. " (Day " .. dayID .. ")")
 	elseif rewardType == "Special" then
-		-- TODO: implementar recompensa especial del día 7
-		warn("Special reward not implemented yet for Day " .. dayID)
+		if dayID == 7 then
+			local unlockedCarsuits = profile.Data.UnlockedCarsuits or {}
+			if not table.find(unlockedCarsuits, 10) then
+				table.insert(unlockedCarsuits, 10)
+				profile.Data.UnlockedCarsuits = unlockedCarsuits
+				local carsuitUnlocked = ReplicatedStorage.RemoteEvents:WaitForChild("CarsuitUnlocked")
+				carsuitUnlocked:FireClient(player, 10)
+				print("[DailyReward] Gave Lightning Car to " .. player.Name .. " (Day " .. dayID .. ")")
+			else
+				DataManager.AddToInventory(player, "SpeedPotion", 20)
+				DataManager.AddToInventory(player, "WinsPotion", 20)	
+			end
+		else
+			warn("Special reward not implemented yet for Day " .. dayID)
+		end
 	elseif rewardType == "Potion" then
 		local potionType = dayPreset.potion_type or "SpeedPotion"
 		DataManager.AddToInventory(player, potionType, rewardAmount)
