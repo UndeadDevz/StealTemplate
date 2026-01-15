@@ -16,9 +16,26 @@ local ExpBaseConfig = {
 		[6] = { Value = 100, WinsCost = 2000 },
 		[7] = { Value = 250, WinsCost = 10000 },
 		[8] = { Value = 500, WinsCost = 40000 },
+		-- Mid-Game (Costos suavizados)
+    	[9] = { Value = 1000,   WinsCost = 80000 },
+    	[10] = { Value = 1800,  WinsCost = 150000 },
+    	[11] = { Value = 3200,  WinsCost = 300000 },
+    	[12] = { Value = 6000,  WinsCost = 600000 },
+    	[13] = { Value = 10000, WinsCost = 1200000 },
+    
+    -- Late-Game (Escala de Millones accesible)
+    	[14] = { Value = 18000,  WinsCost = 2400000 },
+    	[15] = { Value = 32000,  WinsCost = 4500000 },
+    	[16] = { Value = 60000,  WinsCost = 9000000 },
+    	[17] = { Value = 100000, WinsCost = 18000000 },
+    
+    -- Niveles Finales
+    	[18] = { Value = 180000, WinsCost = 35000000 },
+    	[19] = { Value = 320000, WinsCost = 70000000 },
+    	[20] = { Value = 600000, WinsCost = 140000000 },
 	},
 
-	MaxLevel = 8,
+	MaxLevel = 20,
 }
 
 -- Obtener el valor de ExpBase para un nivel dado
