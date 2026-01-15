@@ -132,8 +132,8 @@ local function SetupZone(zona)
 			end
 
 			-- Apply WinsPotion multiplier
-			local winsPotionEndTime = DataManager.GetStat(player, "WinsPotionEndTime") or 0
-			local winsMultiplier = (os.time() < winsPotionEndTime) and 2 or 1
+			local winsRemaining = DataManager.GetStat(player, "WinsPotionRemaining") or 0
+			local winsMultiplier = (winsRemaining > 0) and 2 or 1
 			finalWins = finalWins * winsMultiplier
 
 			-- Dar Wins

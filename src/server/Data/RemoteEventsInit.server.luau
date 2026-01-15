@@ -210,7 +210,7 @@ end
 -- Configuración de recompensa de grupo
 local GROUP_ID = 1035894336
 local GROUP_REWARD_EXP = 10000
-local GroupService = game:GetService("GroupService")
+local _GroupService = game:GetService("GroupService")
 
 -- Handler para ClaimGroupReward
 -- Retorna: { success: boolean, message: string, alreadyClaimed: boolean, inGroup: boolean }
@@ -264,7 +264,7 @@ claimGroupReward.OnServerInvoke = function(player)
 end
 
 -- Crea el RemoteFunction para usar pociones
-local usePotion = remoteEventsFolder:FindFirstChild("UsePotion")
+local usePotion = remoteFunctionsFolder:FindFirstChild("UsePotion")
 if not usePotion then
 	usePotion = Instance.new("RemoteFunction")
 	usePotion.Name = "UsePotion"
@@ -275,20 +275,20 @@ end
 -- Handler para UsePotion
 usePotion.OnServerInvoke = function(player, potionType)
 	local countStat = potionType .. "Count"
-	local endTimeStat = potionType .. "EndTime"
+	local remainingStat = potionType .. "Remaining"
 	local duration = 300  -- 5 minutes
 
 	local currentCount = DataManager.GetStat(player, countStat) or 0
 	if currentCount > 0 then
 		DataManager.AddStat(player, countStat, -1)
-		local currentEndTime = DataManager.GetStat(player, endTimeStat) or 0
-		local newEndTime = math.max(currentEndTime, os.time()) + duration
-		DataManager.UpdateStat(player, endTimeStat, newEndTime)
+		local currentRemaining = DataManager.GetStat(player, remainingStat) or 0
+		local newRemaining = currentRemaining + duration
+		DataManager.UpdateStat(player, remainingStat, newRemaining)
 		
 		-- Notify client
 		local buffActivatedEvent = remoteEventsFolder:FindFirstChild("BuffActivated")
 		if buffActivatedEvent then
-			buffActivatedEvent:FireClient(player, potionType, newEndTime)
+			buffActivatedEvent:FireClient(player, potionType, newRemaining)
 		end
 		return true
 	end

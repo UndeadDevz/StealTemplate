@@ -10,8 +10,8 @@ local inventoryFrame = mainUI:WaitForChild("InventoryFrame")
 
 local remoteFunctions = ReplicatedStorage:WaitForChild("RemoteFunctions")
 local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
-local usePotion = remoteFunctions:WaitForChild("UsePotion")
-local getStat = remoteEvents:WaitForChild("GetStat")
+local usePotion = remoteFunctions:WaitForChild("UsePotion",5)
+local getStat = remoteEvents:WaitForChild("GetStat",5)
 
 -- Assume buttons: UseSpeedPotionButton, UseWinPotionButton
 local speedButton = inventoryFrame:FindFirstChild("UseSpeedPotionButton",true)

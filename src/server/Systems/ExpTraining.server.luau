@@ -156,8 +156,11 @@ while true do
 					local expGanada = baseValue * (1 + speedBoost)
 
 					-- Apply SpeedPotion multiplier
-					local speedPotionEndTime = DataManager.GetStat(player, "SpeedPotionEndTime") or 0
-					local expMultiplier = (os.time() < speedPotionEndTime) and 2 or 1
+					local speedRemaining = DataManager.GetStat(player, "SpeedPotionRemaining") or 0
+					local expMultiplier = (speedRemaining > 0) and 2 or 1
+					if expMultiplier > 1 then
+						print("SpeedPotion active for " .. player.Name .. ", remaining: " .. speedRemaining .. ", multiplier: " .. expMultiplier)
+					end
 					expGanada = expGanada * expMultiplier
 
 					DataManager.AddStat(player, "EXP", expGanada)

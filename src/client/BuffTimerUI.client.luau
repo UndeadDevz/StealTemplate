@@ -21,14 +21,13 @@ local buffActivatedEvent = remoteEvents:WaitForChild("BuffActivated")
 local activeBuffs = {}  -- {potionType: endTime}
 
 local function LoadExistingBuffs()
-	local now = os.time()
-	local speedEndTime = getStat:InvokeServer("SpeedPotionEndTime") or 0
-	if speedEndTime > now then
-		activeBuffs["SpeedPotion"] = speedEndTime
+	local speedRemaining = getStat:InvokeServer("SpeedPotionRemaining") or 0
+	if speedRemaining > 0 then
+		activeBuffs["SpeedPotion"] = speedRemaining
 	end
-	local winsEndTime = getStat:InvokeServer("WinsPotionEndTime") or 0
-	if winsEndTime > now then
-		activeBuffs["WinsPotion"] = winsEndTime
+	local winsRemaining = getStat:InvokeServer("WinsPotionRemaining") or 0
+	if winsRemaining > 0 then
+		activeBuffs["WinsPotion"] = winsRemaining
 	end
 end
 
@@ -41,12 +40,12 @@ end
 local function UpdateTimers()
 	while true do
 		task.wait(1)
-		local now = os.time()
-		for potionType, endTime in pairs(activeBuffs) do
+		for potionType, remaining in pairs(activeBuffs) do
 			local frame = (potionType == "SpeedPotion") and speedEffectFrame or winEffectFrame
 			local counterLabel = frame:FindFirstChild("Counter")
 			if counterLabel then
-				local remaining = endTime - now
+				remaining = remaining - 1
+				activeBuffs[potionType] = remaining
 				if remaining > 0 then
 					counterLabel.Text = FormatTime(remaining)
 					frame.Visible = true
