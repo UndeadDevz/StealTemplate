@@ -1,149 +1,113 @@
 --[[
-	═══════════════════════════════════════════════════════════════════════
-	ZONE EFFECTS SYSTEM
-	═══════════════════════════════════════════════════════════════════════
-
-	Sistema de zonas usando CollectionService (Tags).
-
-	TAGS DISPONIBLES:
-	- KillZone: Mata instantáneamente al jugador
-	- DamageZone: Hace daño configurable con cooldown
-	- TrampolineZone: Trampolín que hace saltar al jugador
-	- Conveyor: Cinta transportadora que mueve al jugador
-
-	CÓMO USAR:
-	1. Selecciona una Part en el Workspace
-	2. En Properties, busca "Tags" o usa el Tag Editor
-	3. Agrega el tag deseado (ej: "KillZone")
-
-	═══════════════════════════════════════════════════════════════════════
+    ═══════════════════════════════════════════════════════════════════════
+    ZONE EFFECTS SYSTEM (OPTIMIZED v2)
+    ═══════════════════════════════════════════════════════════════════════
 ]]
 
 local CollectionService = game:GetService("CollectionService")
-local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
+-- Configuración global
+local POLLING_RATE = 0.1 -- Se revisan las zonas cada 0.1 segundos (10 veces por seg)
+local damageDebounces = {} -- Para el DamageZone
+
 -- ═══════════════════════════════════════════════════════════════════════
--- TAG: KillZone (mata instantáneo)
+-- LÓGICA DE VELOCIDAD (Trampolines y Conveyors)
+-- Estas NO usan bucles, son físicas puras de Roblox (Rate: 0)
 -- ═══════════════════════════════════════════════════════════════════════
-local function configurarKillZone(parte)
+
+local function configurarFisica(parte)
 	if not parte:IsA("BasePart") then return end
-	parte.Touched:Connect(function(hit)
-		local humanoid = hit.Parent:FindFirstChild("Humanoid")
-		if humanoid then
-			humanoid.Health = 0
-		end
-	end)
-end
-
--- ═══════════════════════════════════════════════════════════════════════
--- TAG: DamageZone (hace daño)
--- ATRIBUTOS:
---   Damage (number): Daño que hace (default: 25)
---   Cooldown (number): Tiempo entre daños en segundos (default: 0.5)
--- ═══════════════════════════════════════════════════════════════════════
-local function configurarDamageZone(parte)
-	if not parte:IsA("BasePart") then return end
-	local debounce = {}
-	parte.Touched:Connect(function(hit)
-		local humanoid = hit.Parent:FindFirstChild("Humanoid")
-		local jugador = Players:GetPlayerFromCharacter(hit.Parent)
-		if humanoid and jugador and not debounce[jugador] then
-			debounce[jugador] = true
-			local damage = parte:GetAttribute("Damage") or 25
-			local cooldown = parte:GetAttribute("Cooldown") or 0.5
-			humanoid:TakeDamage(damage)
-			task.delay(cooldown, function()
-				debounce[jugador] = nil
-			end)
-		end
-	end)
-end
-
--- ═══════════════════════════════════════════════════════════════════════
--- TAG: TrampolineZone (trampolín que hace saltar)
--- ATRIBUTOS:
---   BounceSpeed (number): Velocidad del rebote vertical (default: 80)
--- ═══════════════════════════════════════════════════════════════════════
-local function configurarTrampolineZone(parte)
-	if not parte:IsA("BasePart") then return end
-
-	-- Establecer velocidad de la parte - la física de Roblox se encarga del resto
-	local bounceSpeed = parte:GetAttribute("BounceSpeed") or 80
-	parte.Velocity = Vector3.new(0, bounceSpeed, 0)
-end
-
--- ═══════════════════════════════════════════════════════════════════════
--- TAG: Conveyor (cinta transportadora)
--- Usa AssemblyLinearVelocity de forma PASIVA (sin loop)
--- ATRIBUTOS:
---   Speed (number): Velocidad del conveyor (default: 20)
---   Direction (string): "Forward", "Backward", "Left", "Right" (default: "Forward")
--- ═══════════════════════════════════════════════════════════════════════
-local function configurarConveyor(parte)
-	if not parte:IsA("BasePart") then return end
-
-	-- Anclar la parte para que no se mueva pero transmita velocidad
 	parte.Anchored = true
-
-	local function getDirection()
-		local dir = parte:GetAttribute("Direction") or "Forward"
-		if dir == "Forward" then
-			return parte.CFrame.LookVector
-		elseif dir == "Backward" then
-			return -parte.CFrame.LookVector
-		elseif dir == "Left" then
-			return -parte.CFrame.RightVector
-		elseif dir == "Right" then
-			return parte.CFrame.RightVector
-		else
-			return parte.CFrame.LookVector
+	
+	local function actualizar()
+		local tag = ""
+		if CollectionService:HasTag(parte, "Conveyor") then
+			local speed = parte:GetAttribute("Speed") or 20
+			local dir = parte:GetAttribute("Direction") or "Forward"
+			local look = parte.CFrame.LookVector
+			local right = parte.CFrame.RightVector
+			
+			local vel = look -- Default Forward
+			if dir == "Backward" then vel = -look
+			elseif dir == "Left" then vel = -right
+			elseif dir == "Right" then vel = right end
+			
+			parte.AssemblyLinearVelocity = vel * speed
+		
+		elseif CollectionService:HasTag(parte, "TrampolineZone") then
+			local bounce = parte:GetAttribute("BounceSpeed") or 80
+			parte.AssemblyLinearVelocity = Vector3.new(0, bounce, 0)
 		end
 	end
 
-	local function actualizarVelocidad()
-		local speed = parte:GetAttribute("Speed") or 20
-		local direction = getDirection()
-		parte.AssemblyLinearVelocity = direction * speed
-	end
+	actualizar()
+	parte.AttributeChanged:Connect(actualizar)
+end
 
-	-- Configurar una sola vez
-	actualizarVelocidad()
+-- ═══════════════════════════════════════════════════════════════════════
+-- BUCLE CENTRAL DE DETECCIÓN (Kill y Damage)
+-- Esto sustituye al .Touched y baja drásticamente el Rate
+-- ═══════════════════════════════════════════════════════════════════════
 
-	-- Solo actualizar si cambian los atributos
-	parte.AttributeChanged:Connect(function(atributo)
-		if atributo == "Speed" or atributo == "Direction" then
-			actualizarVelocidad()
+task.spawn(function()
+	while true do
+		-- 1. ZONAS DE MUERTE (KillZone)
+		for _, zona in CollectionService:GetTagged("KillZone") do
+			local partesTocando = workspace:GetPartsInPart(zona)
+			for _, p in partesTocando do
+				local hum = p.Parent:FindFirstChild("Humanoid")
+				if hum and hum.Health > 0 then
+					hum.Health = 0
+				end
+			end
 		end
-	end)
-end
+
+		-- 2. ZONAS DE DAÑO (DamageZone)
+		for _, zona in CollectionService:GetTagged("DamageZone") do
+			local partesTocando = workspace:GetPartsInPart(zona)
+			local damage = zona:GetAttribute("Damage") or 25
+			local cooldown = zona:GetAttribute("Cooldown") or 0.5
+			
+			for _, p in partesTocando do
+				local char = p.Parent
+				local player = Players:GetPlayerFromCharacter(char)
+				local hum = char:FindFirstChild("Humanoid")
+				
+				if hum and hum.Health > 0 and player then
+					local lastDamage = damageDebounces[player] or 0
+					if tick() - lastDamage >= cooldown then
+						damageDebounces[player] = tick()
+						hum:TakeDamage(damage)
+					end
+				end
+			end
+		end
+
+		task.wait(POLLING_RATE)
+	end
+end)
 
 -- ═══════════════════════════════════════════════════════════════════════
--- ACTIVAR TODAS LAS TAGS
+-- INICIALIZACIÓN
 -- ═══════════════════════════════════════════════════════════════════════
 
--- KillZone
-for _, parte in CollectionService:GetTagged("KillZone") do
-	configurarKillZone(parte)
+-- Configurar los que ya existen y los que se agreguen después
+local function setup(parte)
+	if CollectionService:HasTag(parte, "Conveyor") or CollectionService:HasTag(parte, "TrampolineZone") then
+		configurarFisica(parte)
+	end
 end
-CollectionService:GetInstanceAddedSignal("KillZone"):Connect(configurarKillZone)
 
--- DamageZone
-for _, parte in CollectionService:GetTagged("DamageZone") do
-	configurarDamageZone(parte)
+-- Escuchar etiquetas para Trampolines/Conveyors
+for _, tag in {"Conveyor", "TrampolineZone"} do
+	for _, inst in CollectionService:GetTagged(tag) do setup(inst) end
+	CollectionService:GetInstanceAddedSignal(tag):Connect(setup)
 end
-CollectionService:GetInstanceAddedSignal("DamageZone"):Connect(configurarDamageZone)
 
--- TrampolineZone
-for _, parte in CollectionService:GetTagged("TrampolineZone") do
-	configurarTrampolineZone(parte)
-end
-CollectionService:GetInstanceAddedSignal("TrampolineZone"):Connect(configurarTrampolineZone)
+-- Limpieza de debounces cuando el jugador se va
+Players.PlayerRemoving:Connect(function(player)
+	damageDebounces[player] = nil
+end)
 
--- Conveyor
-for _, parte in CollectionService:GetTagged("Conveyor") do
-	configurarConveyor(parte)
-end
-CollectionService:GetInstanceAddedSignal("Conveyor"):Connect(configurarConveyor)
-
-print("[ZoneEffects] ✅ Sistema de zonas activado")
+print("[ZoneEffects] ✅ Sistema optimizado activado (Polling Mode)")
