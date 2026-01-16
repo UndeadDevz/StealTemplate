@@ -11,6 +11,11 @@ local BUTTONS_CONFIG = {
 	{ ButtonName = "BuySpeedPotionButton", ProductId = 3513445425 }, -- Speed Potion
 	{ ButtonName = "BuyWinPotionButton", ProductId = 3513445564 },   -- Wins Potion
 	{ ButtonName = "BuyBundlePotionButton", ProductId = 3513445863 }, -- Bundle
+	{ ButtonName = "Buy100Win", ProductId = 3514238670 }, -- Buy100Win
+	{ ButtonName = "Buy400Win", ProductId = 3514238956 }, -- Buy400Win
+	{ ButtonName = "Buy1200Win", ProductId = 3514239409 }, -- Buy1200Win
+	{ ButtonName = "Buy3500Win", ProductId = 3514239594 }, -- Buy3500Win
+	{ ButtonName = "Buy12000Win", ProductId = 3514239931 }, -- Buy12000Win
 }
 
 for _, config in ipairs(BUTTONS_CONFIG) do

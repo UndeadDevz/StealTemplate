@@ -49,6 +49,13 @@ local PRODUCTOS = {
 	[3513445425] = { Type = "Potion", Value = "SpeedPotion" },  -- Speed Potion
 	[3513445564] = { Type = "Potion", Value = "WinsPotion" },   -- Wins Potion
 	[3513445863] = { Type = "Potion", Value = "BundlePotion" }, -- Bundle (5 Speed + 5 Wins)
+
+	-- [[ COMPRA DE VICTORIAS (Consumibles) ]] --
+	[3514238670] = { Type = "Wins", Value = 100 },   -- Buy100Win (placeholder ID)
+	[3514238956] = { Type = "Wins", Value = 400 },   -- Buy400Win (placeholder ID)
+	[3514239409] = { Type = "Wins", Value = 1200 },  -- Buy1200Win (placeholder ID)
+	[3514239594] = { Type = "Wins", Value = 3500 },  -- Buy3500Win (placeholder ID)
+	[3514239931] = { Type = "Wins", Value = 12000 }, -- Buy12000Win (placeholder ID)
 }
 
 local function ProcessReceipt(receiptInfo)
@@ -116,6 +123,12 @@ local function ProcessReceipt(receiptInfo)
 				DataManager.AddToInventory(player, "WinsPotion", 100)
 				print("📦 Potion Bundle comprado por:", player.Name)
 			end
+			return Enum.ProductPurchaseDecision.PurchaseGranted
+
+		-- LOGICA PARA COMPRA DE VICTORIAS
+		elseif data.Type == "Wins" then
+			DataManager.AddStat(player, "Wins", data.Value)
+			print("🏆 " .. data.Value .. " Wins compradas por:", player.Name)
 			return Enum.ProductPurchaseDecision.PurchaseGranted
 		end
 
